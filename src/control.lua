@@ -480,6 +480,17 @@ script.on_event(defines.events.on_pre_build,
     -- before the build happens.  This restores the ghost to the main force so that any special logic like recipe
     -- preservation will be handled properly when the entity gets built.
     local player = game.players[event.player_index]
+
+    -- Selection tools can be used to build entities as they are being dragged across the screen. If player is building
+    -- entities with a selection tool, make sure to validate that the selection tool places entities that are selectable
+    -- before approving the underlying unapproved ghosts. Tapeline is an example of a mod that behaves in this manner.
+    -- Unfortunately, it does not seem possible to more closely detect what entity would get placed during this event.
+    local cursor_stack = player.cursor_stack
+    if cursor_stack and cursor_stack.is_selection_tool and
+      cursor_stack.prototype.place_result and not cursor_stack.prototype.place_result.selectable_in_game then
+      return
+    end
+
     local unapproved_ghost_force_name = to_unapproved_ghost_force_name(player.force.name)
     if game.forces[unapproved_ghost_force_name] then
       local unapproved_ghosts = player.surface.find_entities_filtered {
