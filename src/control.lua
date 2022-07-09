@@ -219,7 +219,11 @@ function is_approvable_ghost(entity)
     return entity.time_to_live < UINT32_MAX
   end
 
-  return entity and entity.type == "entity-ghost" and not is_placeholder(entity) and not is_perishable(entity)
+  function is_selectable(entity)
+    return entity.type == "entity-ghost" and entity.ghost_prototype.selectable_in_game
+  end
+
+  return entity and entity.type == "entity-ghost" and not is_placeholder(entity) and not is_perishable(entity) and is_selectable(entity)
 end
 
 function approve_entities(entities)
