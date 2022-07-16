@@ -51,7 +51,6 @@ Roadmap
 - [ ] Option to require approval for tile ghosts as well
 - [ ] Support use of the upgrade planner on unapproved ghosts
 - [ ] Improved graphics and icons
-- [ ] Undo support (if the mod API allows for it)
 - [ ] Improve visual appearance when selecting unapproved ghosts using the blueprint and deconstruction tools (if the mod API allows for it)
 
 

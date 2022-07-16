@@ -130,6 +130,21 @@ function get_script_blueprint()
   return global.blueprintInventory[1]
 end
 
+
+--- Returns a player-neutral deconstruction planner.
+--
+-- @return LuaItemStack Deconstruction planner.
+--
+function get_deconstruction_planner()
+  if not global.deconstruction_planner_inventory then
+    global.deconstruction_planner_inventory = game.create_inventory(1)
+    global.deconstruction_planner_inventory.insert({ name = "deconstruction-planner" })
+  end
+
+  return global.deconstruction_planner_inventory[1]
+end
+
+
 function to_blueprint_entity(entity)
   local bp = get_script_blueprint()
   bp.clear_blueprint()
@@ -453,16 +468,73 @@ script.on_event(defines.events.on_player_setup_blueprint,
 
 script.on_event(defines.events.on_pre_ghost_deconstructed,
   function(event)
-    -- game.print("construction-planner: on_pre_ghost_deconstructed for ghost " .. entity_debug_string(event.ghost));
+    -- Assume that the player had invoked ghost deconstruction using deconstruction planner, and simply destroy the
+    -- placeholder ghost entity. This prevents it from ending-up in the undo queue.
+    --
+    -- Unapproved ghost entities are then destroyed as part of on_player_deconstructed_area event. This is done in order
+    -- to have the unapproved ghost entities become part of the undo queue (see the mentioned handler for more details).
+    --
+    -- @TODO: The on_player_deconstructed_area event will not trigger if scripts invoke
+    --        LuaEntity::order_deconstruction() or LuaSurface::deconstruct_area() functions. This needs to be handled in
+    --        some way, although it may degrade user experience in terms of undo queue.
+
+    local player = event.player_index and game.players[event.player_index] or nil
     local entity = event.ghost
 
-    -- If a placeholder was deconstructed, find and remove the unapproved entity as well
-    -- If an unapproved entity was deconstructed (somehow), find and remove the placeholder as well
+    -- Drop the placholder entity.
     if is_placeholder(entity) then
-      remove_unapproved_ghost_for(entity)
+
+      -- If script triggered this (using LuaEntity::order_deconstruction() or LuaSurface::deconstruct_area()) without
+      -- assignment to player, remove the unapproved ghost entity, and also proceed to destroy the ghost.
+      if not player then
+        remove_unapproved_ghost_for(entity)
+        entity.destroy()
+
+      -- If player triggered this using a deconstruction planner, only destroy the placeholder ghost entity
+      -- itself. Removal of unapproved ghost entities will be taken care of by the on_player_deconstructed_area event
+      -- handler, preserving the undo queue in the process.
+      elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "deconstruction-planner" then
+        entity.destroy()
+
+      elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "cut-paste-tool" then
+        game.print("@TODO: Currently unable to properly handle the cut-and-paste tool.")
+
+      -- Script triggered the removal, and assigned it to player. Destroy placeholder entity directly (to prevent it
+      -- from reaching player's undo queue), and destroy the unapproved ghost entity through deconstruction planner (to
+      -- place it in the undo queue).
+      --
+      -- Caveats/notes:
+      --
+      -- 1. When using the LuaEntity::order_deconstruction() invocation, even when player is assigned, it will not place
+      --    anything in player's undo queue. But... We simply cannot distinguish between this function all and the
+      --    LuaSurface::deconstruct_area() one. Which means we would pollute plater's undo queue this way. Not sure how
+      --    to solve it, truth be told.
+      --
+      -- 2. We cannot have a single step in undo queue for LuaSurface::deconstruct_area(), since area information is not
+      --    available at this stage, and it triggers the "on_marked_for_deconstruction" event only if at least one
+      --    non-ghost entity was in the selection. So we will end-up messing with player's undo queue quite a bit here.
+      --
+      -- 3. It might be better to simplify the code instead, and just drop this entire else block. What would be lost
+      --    then is eventual correctness of interaction with other mods that might be using the above Lua functions for
+      --    something with expectation that the player's undo queue is preserved.
+      else
+        get_deconstruction_planner().deconstruct_area{
+          surface = entity.surface,
+          force = to_unapproved_ghost_force_name(entity.force.name),
+          area = {{entity.position.x, entity.position.y}, {entity.position.x, entity.position.y}},
+          skip_fog_of_war = false,
+          by_player = player}
+
+        entity.destroy()
+      end
+
+    -- If an unapproved ghost entity is somehow getting removed, make sure the placeholders are gone as
+    -- well.
     elseif (is_unapproved_ghost_force_name(entity.force.name)) then
-        remove_placeholder_for(entity)
+      remove_placeholder_for(entity)
+      return
     end
+
   end
 )
 
@@ -596,6 +668,23 @@ script.on_configuration_changed(
   end
 )
 
+script.on_event(defines.events.on_player_deconstructed_area,
+  function(event)
+    -- At this point, the placeholder ghost entities should already be gone. This handler takes care of removing the
+    -- unapproved ghost entities in such a manner that they end-up on player's undo queue.
+
+    local player = game.players[event.player_index]
+
+    get_deconstruction_planner().deconstruct_area{
+      surface = event.surface,
+      force = to_unapproved_ghost_force_name(player.force.name),
+      area = event.area,
+      skip_fog_of_war = false,
+      by_player = player
+    }
+
+  end
+)
 
 -------------------------------------------------------------------------------
 --       REMOTE INTERFACES (comment out when not debugging)
