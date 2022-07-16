@@ -11,7 +11,7 @@ local constructionPlanner = {
     order = "c[automated-construction]-b[construction-planner]",
     icons = {
         {icon = "__base__/graphics/icons/upgrade-planner.png", icon_size = 64, icon_mipmaps = 4},
-        {icon = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75},
+        {icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75},
     },
     flags = {"hidden", "not-stackable", "spawnable", "only-in-cursor"},
     subgroup = "other",
@@ -62,7 +62,7 @@ local giveConstructionPlannerShortcut = {
     -- technology_to_unlock = "construction-robotics",
     style = "green",
     icon = {
-        filename = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x32-white.png",
+        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x32-white.png",
         priority = "extra-high-no-scale",
         size = 32,
         scale = 0.5,
@@ -70,7 +70,7 @@ local giveConstructionPlannerShortcut = {
         flags = {"gui-icon"}
     },
     small_icon = {
-        filename = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
+        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
         priority = "extra-high-no-scale",
         size = 24,
         scale = 0.5,
@@ -78,7 +78,7 @@ local giveConstructionPlannerShortcut = {
         flags = {"gui-icon"}
     },
     disabled_small_icon = {
-        filename = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
+        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
         priority = "extra-high-no-scale",
         size = 24,
         scale = 0.5,
@@ -112,7 +112,7 @@ local toggleAutoApproveShortcut = {
     style = "default",
     toggleable = true,
     icon = {
-        filename = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/auto-approve-x32.png",
+        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x32.png",
         priority = "extra-high-no-scale",
         size = 32,
         scale = 0.5,
@@ -120,7 +120,7 @@ local toggleAutoApproveShortcut = {
         flags = {"gui-icon"}
     },
     small_icon = {
-        filename = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24.png",
+        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24.png",
         priority = "extra-high-no-scale",
         size = 24,
         scale = 0.5,
@@ -128,7 +128,7 @@ local toggleAutoApproveShortcut = {
         flags = {"gui-icon"}
     },
     disabled_small_icon = {
-        filename = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24-white.png",
+        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24-white.png",
         priority = "extra-high-no-scale",
         size = 24,
         scale = 0.5,
@@ -141,7 +141,7 @@ local toggleAutoApproveShortcut = {
 local unapproved_item_group = table.deepcopy(data.raw["item-group"]["other"]);
 unapproved_item_group.name = "unapproved-entities"
 unapproved_item_group.icons = {
-    {icon = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}
+    {icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}
 }
 local unapproved_item_subgroup = table.deepcopy(data.raw["item-subgroup"]["other"]);
 unapproved_item_subgroup.name = "unapproved-entities-subgroup"
@@ -157,11 +157,11 @@ local unapproved_ghost_placeholder = {
     flags = {"placeable-off-grid", "player-creation", "not-on-map", "hidden", "hide-alt-info", "not-flammable", "not-selectable-in-game", "not-in-kill-statistics"},
     -- selection_box = {{-0.5, -0.5}, {0.5, 0.5}}, -- DO NOT ENABLE
     icons = {
-        {icon = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}
+        {icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}
     },
     picture = {
       -- filename = "__base__/graphics/entity/steel-chest/steel-chest.png",
-      filename = "__ConstructionPlanner__/graphics/icons/placeholder.png",
+      filename = "__ConstructionPlannerContinued__/graphics/icons/placeholder.png",
       -- priority = "extra-high",
       width = 1,
       height = 1,
@@ -177,7 +177,7 @@ unapproved_ghost_placeholder_item.name = "unapproved-ghost-placeholder";
 unapproved_ghost_placeholder_item.place_result = "unapproved-ghost-placeholder"
 unapproved_ghost_placeholder_item.subgroup = "unapproved-entities-subgroup"
 unapproved_ghost_placeholder_item.icons = {
-    {icon = "__ConstructionPlanner__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}
+    {icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}
 }
 
 
