@@ -348,29 +348,6 @@ script.on_event(defines.events.on_player_alt_selected_area,
   end
 )
 
-script.on_event(defines.events.on_built_entity,
-  function(event)
-    -- game.print("construction-planner: detected new ghost entity " .. entity_debug_string(event.created_entity))
-    -- game.print("  Tags: " .. serpent.line(event.created_entity.tags))
-    
-    local player = game.players[event.player_index]
-    if not is_auto_approve(player) then
-      unapprove_entities({event.created_entity})
-    else
-      approve_entities({event.created_entity})
-    end
-
-    -- TODO: ask on the forums if is_shortcut_available can be made available for all mod-defined shortcuts
-    --       (but first ask in Discord if there's another way that I'm just missing)
-    -- if player.is_shortcut_available("give-construction-planner") and not is_auto_approve(player) then
-    --   unapprove_entities({event.created_entity})
-    -- else
-    --   approve_entities({event.created_entity})
-    -- end
-  end,
-  {{ filter="type", type="entity-ghost"}}
-)
-
 script.on_event(defines.events.on_player_setup_blueprint,
   function(event)
     -- Note: this event fires not just for blueprints, but for copy operations as well
@@ -440,21 +417,6 @@ script.on_event(defines.events.on_player_setup_blueprint,
     end
     if (player.is_cursor_blueprint()) then
       adjust_blueprint(player.cursor_stack)
-    end
-  end
-)
-
-script.on_event(defines.events.on_pre_ghost_deconstructed,
-  function(event)
-    -- game.print("construction-planner: on_pre_ghost_deconstructed for ghost " .. entity_debug_string(event.ghost));
-    local entity = event.ghost
-
-    -- If a placeholder was deconstructed, find and remove the unapproved entity as well
-    -- If an unapproved entity was deconstructed (somehow), find and remove the placeholder as well
-    if is_placeholder(entity) then
-      remove_unapproved_ghost_for(entity)
-    elseif (is_unapproved_ghost_force_name(entity.force.name)) then
-        remove_placeholder_for(entity)
     end
   end
 )
@@ -568,3 +530,143 @@ script.on_event(defines.events.on_runtime_mod_setting_changed,
 --     end
 --   end
 -- })
+
+local construction_planner = {}
+
+
+function construction_planner.initialise_player_data()
+  global.undo = global.undo or {}
+
+  for player_index, player in pairs(game.players) do
+    global.undo[player_index] = global.undo[player_index] or {}
+    global.undo[player_index].inventory = global.undo[player_index].inventory or game.create_inventory(1)
+  end
+end
+
+
+function construction_planner.on_init()
+  construction_planner.initialise_player_data()
+end
+
+
+function construction_planner.on_configuration_changed(data)
+  construction_planner.initialise_player_data()
+end
+
+
+function construction_planner.debug_interface()
+  return global.undo
+end
+
+
+function construction_planner.get_unapproved_ghost_entity(placeholder)
+  return placeholder.surface.find_entities_filtered {
+    position = placeholder.position,
+    force = to_unapproved_ghost_force_name(placeholder.force.name),
+    name = "entity-ghost"
+  }
+end
+
+
+function construction_planner.on_pre_ghost_deconstructed(event)
+  local entity = event.ghost
+  local age = game.tick
+  local player = game.players[event.player_index]
+  local undo_inventory = global.undo[event.player_index].inventory
+
+  if not undo_inventory[1].valid_for_read then
+    undo_inventory.insert({ name="blueprint"})
+  end
+
+  local undo_blueprint = undo_inventory[1]
+
+  print("[CP/on_pre_ghost_deconstructed] start @" .. age)
+  print("[CP/on_pre_ghost_deconstructed] placeholder: " .. entity_debug_string(entity))
+
+  if is_placeholder(entity) then
+    local unapproved_ghost_entities = construction_planner.get_unapproved_ghost_entity(entity)
+
+    for _, unapproved_ghost_entity in pairs(unapproved_ghost_entities) do
+      print("[CP/on_pre_ghost_deconstructed] unapproved ghost: " .. entity_debug_string(unapproved_ghost_entity))
+      undo_blueprint.clear_blueprint()
+      undo_blueprint.create_blueprint {
+        surface = entity.surface,
+        force = to_unapproved_ghost_force_name(player.force.name),
+        area = {{entity.position.x, entity.position.y}, {entity.position.x, entity.position.y}},
+        include_entities = true,
+        include_modules = true,
+        include_station_names = true,
+        include_trains = true,
+        include_fuel = true,
+      }
+    end
+
+    remove_unapproved_ghost_for(entity)
+  elseif (is_unapproved_ghost_force_name(entity.force.name)) then
+    remove_placeholder_for(entity)
+  end
+end
+
+
+function construction_planner.on_player_deconstructed_area(event)
+  local player = game.players[event.player_index]
+  -- player.cursor_stack.set_stack(global.undo[player.index].inventory[1])
+end
+
+
+function construction_planner.on_built_entity(event)
+  -- game.print("construction-planner: detected new ghost entity " .. entity_debug_string(event.created_entity))
+  -- game.print("  Tags: " .. serpent.line(event.created_entity.tags))
+  local player = game.players[event.player_index]
+  local entity = event.created_entity
+
+  if not is_auto_approve(player) then
+    print("Here?")
+    unapprove_entities({entity})
+  else
+    approve_entities({entity})
+  end
+
+  if entity.ghost_name == "unapproved-ghost-placeholder" then
+    local blueprint = global.undo[player.index].inventory[1]
+    game.print(entity_debug_string(entity))
+
+    local surface = entity.surface
+    -- local force = to_unapproved_ghost_force_name(entity.force.name)
+    local force = entity.force
+    local position = {entity.position.x, entity.position.y}
+
+    print("Building blueprint under " .. entity_debug_string(entity))
+    entity.destroy()
+
+    blueprint.build_blueprint {
+      surface = surface,
+      force = force,
+      position = position,
+      skip_fog_of_war = false,
+      by_player = player,
+    }
+  end
+
+  -- TODO: ask on the forums if is_shortcut_available can be made available for all mod-defined shortcuts
+  --       (but first ask in Discord if there's another way that I'm just missing)
+  -- if player.is_shortcut_available("give-construction-planner") and not is_auto_approve(player) then
+  --   unapprove_entities({event.created_entity})
+  -- else
+  --   approve_entities({event.created_entity})
+  -- end
+end
+
+
+function construction_planner.on_script_raised_built(event)
+  game.print("Yay!")
+end
+
+
+remote.add_interface("constructionplanner", { debug = construction_planner.debug_interface })
+script.on_init(construction_planner.on_init)
+script.on_configuration_changed(construction_planner.on_configuration_changed)
+script.on_event(defines.events.on_pre_ghost_deconstructed, construction_planner.on_pre_ghost_deconstructed)
+script.on_event(defines.events.on_player_deconstructed_area, construction_planner.on_player_deconstructed_area)
+script.on_event(defines.events.on_built_entity, construction_planner.on_built_entity, {{ filter="type", type="entity-ghost"}})
+script.on_event(defines.events.script_raised_built, construction_planner.on_script_raised_built)
