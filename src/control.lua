@@ -252,17 +252,22 @@ function unapprove_entities(entities)
 
   for _, entity in pairs(entities) do
     if is_approvable_ghost(entity) then
+
+      -- Determine the unapproved ghost entities force. The entity will already have its force set as one when player invokes undo after removing unapproved
+      -- ghost entity (via right-click).
+      local unapproved_force
       if not is_unapproved_ghost_force_name(entity.force.name) then
-        local unapproved_force = unapprovedForceCache[entity.force.name]
-        if not unapproved_force then
-          unapproved_force = get_or_create_unapproved_ghost_force(entity.force)
-          unapprovedForceCache[entity.force.name] = unapproved_force
-        end
-        if (entity.force ~= unapproved_force) then
-          entity.force = unapproved_force
-          create_placeholder_for(entity)
-        end
+        unapprovedForceCache[entity.force.name] = unapprovedForceCache[entity.force.name] or get_or_create_unapproved_ghost_force(entity.force)
+        unapproved_force = unapprovedForceCache[entity.force.name]
+      else
+        unapproved_force = entity.force
       end
+
+      if (entity.force ~= unapproved_force) then
+          entity.force = unapproved_force
+      end
+
+      create_placeholder_for(entity)
       local badgeId = approvalBadges.getOrCreate(entity);
       approvalBadges.showUnapproved(badgeId)
     end
@@ -353,6 +358,13 @@ script.on_event(defines.events.on_built_entity,
     -- game.print("construction-planner: detected new ghost entity " .. entity_debug_string(event.created_entity))
     -- game.print("  Tags: " .. serpent.line(event.created_entity.tags))
     
+    local entity = event.created_entity
+
+    print("Built entity")
+    print("  Name: " .. entity.name)
+    print("  Ghost name: " .. entity.ghost_name)
+    print("  Force name: " .. entity.force.name)
+
     local player = game.players[event.player_index]
     if not is_auto_approve(player) then
       unapprove_entities({event.created_entity})
