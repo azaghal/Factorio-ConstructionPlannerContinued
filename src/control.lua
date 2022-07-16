@@ -360,11 +360,6 @@ script.on_event(defines.events.on_built_entity,
     
     local entity = event.created_entity
 
-    print("Built entity")
-    print("  Name: " .. entity.name)
-    print("  Ghost name: " .. entity.ghost_name)
-    print("  Force name: " .. entity.force.name)
-
     local player = game.players[event.player_index]
     if not is_auto_approve(player) then
       unapprove_entities({event.created_entity})
@@ -571,10 +566,8 @@ script.on_configuration_changed(
           local show_badge_function
 
           if is_unapproved_ghost_force_name(force.name) then
-            print(force.name .. " is " .. "unapproved")
             show_badge_function = approvalBadges.showUnapproved
           else
-            print(force.name .. " is " .. "approved")
             show_badge_function = approvalBadges.showApproved
           end
 
