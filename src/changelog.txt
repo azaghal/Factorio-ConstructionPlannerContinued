@@ -4,7 +4,8 @@ Date: 9999-99-99
   Bugfixes:
     - Ignore ghost entitites that are marked as non-selectable. Fixes phantom ghosts when used with Tapeline mod. Permanent tapelines would leave "phantom" ghosts otherwise.
     - Do not auto-approve ghosts when using selection tools that place entities that are not selectable in the game. Those are usually used for special purposes by mods that build them. Fixes issues with selection tool from Tapeline mod approving the ghosts when dragged over them.
-    - Fix unselectable unapproved ghost entities when player invokes undo on a removed unapproved ghost entity.
+    - Fixed unselectable unapproved ghost entities when player invokes undo on a removed unapproved ghost entity.
+    - Fixed accidental approvals when placing ghosts by quickly dragging across the screen.
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.5
 Date: 2021-10-17

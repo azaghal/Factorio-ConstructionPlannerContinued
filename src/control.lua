@@ -488,6 +488,13 @@ script.on_event(defines.events.on_pre_build,
     -- preservation will be handled properly when the entity gets built.
     local player = game.players[event.player_index]
 
+    -- Do not approve the ghost if player is in process of placing ghosts. This will also deal with "fake" approvals
+    -- when player is quickly dragging with a ghost entity (basically the on_pre_build will get triggered while still on
+    -- top of the ghost placed in previous step, and approve it by mistake).
+    if event.shift_build or player.cursor_stack and not player.cursor_stack.valid_for_read then
+      return
+    end
+
     -- Selection tools can be used to build entities as they are being dragged across the screen. If player is building
     -- entities with a selection tool, make sure to validate that the selection tool places entities that are selectable
     -- before approving the underlying unapproved ghosts. Tapeline is an example of a mod that behaves in this manner.
