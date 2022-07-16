@@ -532,6 +532,44 @@ script.on_event(defines.events.on_runtime_mod_setting_changed,
   end
 )
 
+script.on_configuration_changed(
+  function(data)
+    -- Migrate data from the old Construction Planner. This requires iterating over all forces and surfaces and updating data as necessary.
+    -- Approval badges need to be recreated for each ghost entity.
+    if data.mod_changes['ConstructionPlanner'] and data.mod_changes['ConstructionPlanner'].new_version == nil then
+      for _, force in pairs(game.forces) do
+        for _, surface in pairs(game.surfaces) do
+
+          -- Depending on force type we need to show badges with different indicators.
+          local show_badge_function
+
+          if is_unapproved_ghost_force_name(force.name) then
+            print(force.name .. " is " .. "unapproved")
+            show_badge_function = approvalBadges.showUnapproved
+          else
+            print(force.name .. " is " .. "approved")
+            show_badge_function = approvalBadges.showApproved
+          end
+
+          local ghost_entities = surface.find_entities_filtered {
+            force = force.name,
+            name = "entity-ghost"
+          }
+
+          for _, entity in pairs(ghost_entities) do
+            if not is_placeholder(entity) then
+              local badge_id = approvalBadges.getOrCreate(entity)
+              show_badge_function(badge_id)
+            end
+          end
+
+        end
+      end
+    end
+  end
+)
+
+
 -------------------------------------------------------------------------------
 --       REMOTE INTERFACES (comment out when not debugging)
 -------------------------------------------------------------------------------
