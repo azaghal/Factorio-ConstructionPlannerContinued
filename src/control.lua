@@ -705,13 +705,16 @@ script.on_event(defines.events.on_player_deconstructed_area,
 
     local player = game.players[event.player_index]
 
-    get_deconstruction_planner().deconstruct_area{
-      surface = event.surface,
-      force = to_unapproved_ghost_force_name(player.force.name),
-      area = event.area,
-      skip_fog_of_war = false,
-      by_player = player
-    }
+    -- Trigger on normal selection only in order to avoid messing with canceling deconstruction of rocks etc.
+    if not event.alt  then
+      get_deconstruction_planner().deconstruct_area{
+        surface = event.surface,
+        force = to_unapproved_ghost_force_name(player.force.name),
+        area = event.area,
+        skip_fog_of_war = false,
+        by_player = player
+      }
+    end
 
   end
 )
