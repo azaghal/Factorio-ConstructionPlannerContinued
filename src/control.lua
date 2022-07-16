@@ -462,6 +462,17 @@ script.on_event(defines.events.on_player_setup_blueprint,
     end
     if (player.is_cursor_blueprint()) then
       adjust_blueprint(player.cursor_stack)
+
+      -- Player may have set-up the blueprint by invoking the cut-paste-tool. Store:
+      --
+      --   - age, assuming that related on_pre_ghost_deconstructed will get executed in the same tick.
+      --   - area, that can be used for deconstructing all unapproved ghost entities.
+      --   - surface, for completeness sake when doing condition checks in on_pre_ghost_deconstructed.
+      global.player_setup_blueprint = global.player_setup_blueprint or {}
+      global.player_setup_blueprint[player.index] = global.player_setup_blueprint[player.index] or {}
+      global.player_setup_blueprint[player.index].age = event.tick
+      global.player_setup_blueprint[player.index].area = event.area
+      global.player_setup_blueprint[player.index].surface = event.surface
     end
   end
 )
@@ -496,8 +507,27 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "deconstruction-planner" then
         entity.destroy()
 
-      elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "cut-paste-tool" then
-        game.print("@TODO: Currently unable to properly handle the cut-and-paste tool.")
+      -- If player triggered this using the cut-and-paste tool, check if a blueprint had been set-up in the same tick as
+      -- this event, and deconstruct an entire affected area. This should store all unapproved ghost entities from that
+      -- entire area within the same item in the undo queue, instead of having one per unapproved ghost entity in the
+      -- cut-and-pasted area.
+      --
+      -- Caveats/notes:
+      --
+      -- 1. If there is a mix of approved and unapproved ghost entities, they will be stored as two distinct items in
+      --    the undo queue.
+      --
+      elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "cut-paste-tool" and
+             global.player_setup_blueprint[player.index].age == event.tick and
+             global.player_setup_blueprint[player.index].surface == entity.surface then
+
+        get_deconstruction_planner().deconstruct_area {
+          surface = entity.surface,
+          force = to_unapproved_ghost_force_name(player.force.name),
+          area = global.player_setup_blueprint[player.index].area,
+          skip_fog_of_war = false,
+          by_player = player
+        }
 
       -- Script triggered the removal, and assigned it to player. Destroy placeholder entity directly (to prevent it
       -- from reaching player's undo queue), and destroy the unapproved ghost entity through deconstruction planner (to
