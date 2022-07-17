@@ -72,4 +72,4 @@ This is a continuation/fork of the original [Construction Planner mod](https://m
 License
 -------
 
-All code, documentation, and assets implemented as part of this modpack are released under the terms of MIT license (see the accompanying `LICENSE`) file.
+All code, documentation, and assets implemented as part of this mod are released under the terms of MIT license (see the accompanying `LICENSE`) file.
