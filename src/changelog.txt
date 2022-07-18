@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
+Version: 1.1.0
+Date: 2022-07-19
   Features:
     - Removal of unapproved ghosts using deconstruction planner can now be undone using standard game controls (Control + Z).
     - Removal of unapproved ghosts using cut-and-paste tool can now be undone using standard game controls (Control + Z).
