@@ -41,6 +41,7 @@ Known issues
 -   Unapproved ghosts selected with any cut/copy/blueprint/deconstruct tool show-up as "placeholder" ghosts (check-marks).
 -   Undoing deletion with combination of approved and unapproved ghosts results in two separate undo steps.
 -   Construction bots already en route to approved ghosts will not turn around until they reach the build site. However, no unapproved entities will be built. Compare this to deconstruction of a ghost, when the bots do turn around immediatelly.
+-   Approving/unapproving itself cannot be undone. When ghost entities get approved, and personal robots construct them, undoing will _not_ cause those newly built entities to be marked for deconstruction. Approve/unapprove actions themselves are not put into the undo queue. Be careful not to accidentally undo some unrelated part of the base in this manner.
 
 
 Roadmap
@@ -54,6 +55,10 @@ Roadmap
 -   [ ] Improved graphics and icons.
 -   [ ] In-game tips-and-tricks demonstration and documentation.
 -   [ ] Show correct selection boxes around unapproved ghosts when using blueprint and deconstruction tools.
+-   [ ] Support for force merging (merging unapproved ghosts forces in addition to merging of base forces).
+-   [ ] Efficient means for force identification (if the regex is too slow).
+-   [ ] Use on\_entity\_changed_force event handler for approval status badge updates if Wube Software ever implementes it.
+-   [ ] Undo support for approve/unapprove actions.
 
 
 How it works

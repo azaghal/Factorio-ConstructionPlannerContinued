@@ -1,32 +1,6 @@
--- Ideas for future enhancement:
-  -- Use "on_entity_changed_force", if Wube decides to add it
-  -- Forces library?
-  -- More efficient force identification logic?  (regex = slow)
-  -- Ideas for additional mod settings:
-    -- Allow building of unapproved entities when there are no remaining approved entities to build (within a given logistic network?)
-    -- Allow building of unapproved entities of a given type if there are enough spare resources of that type + available construction bots (within a given logistic network)
-
 -- Note: there is no "on_entity_changed_force" event, so I'll have to just update badges as I change the forces in my
 --       mod, and hope that other mods don't mess around with the forces too much.  For /editor force changes during
 --       testing, I can use a console command + remote interface to manually force a badge rescan.
-
---  TODO: investigate item-request-proxy and whether or not there might be any issues related to that (i.e. are assembler module requests remembered?)
---  TODO: resolve bugs
---    1. Placeholder ghost deconstruction can be brought back via undo
---      - There isn't a way to hook into undo events that I can tell.  I'll have to find another way.
---      - Option A: remove the placeholder during on_pre_ghost_deconstructed and hope that effectively 'cancels' the deconstruction so it won't go on the undo queue
---        - Big con here is that it will be confusing that undo doesn't work for unapproved decon when it would be expected that it does
---      - Option B: roll with the undo (it should work anyways!), and find a way to remember and 'undo' the unapproved entities that pair with the placeholders
---        - More complex, but it will be much more useful to the player
---        - Can detect player deconstruction events using on_player_deconstructed_area and save a BlueprintEntities array of the unapproved entities in that area
---        - Then use some sort of on_tick magic or similar to detect an 'undo event' for the same area, and restore the blueprint entities.
---        - Note: According to JanSharp on Discord, the undo queue has a max length of 100, so I only have to save data on the 100 most recent deconstruction events
---      - However I can probably use event on_pre_ghost_deconstructed to fix things, by approving the paired unapproved
---       ghosts and/or removing the placeholder before the decon planner can act on it
---      - Use LuaPreGhostDeconstructedEventFilter to make it more efficient
---      [X] Confirm/reproduce
---      [ ] Figure out a solution
---      [ ] Implement solution
 
 local approvalBadges = require("control.approvalBadges")
 
