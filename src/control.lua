@@ -42,14 +42,29 @@ function to_unapproved_ghost_force_name(base_force_name)
   return base_force_name .. ".unapproved_ghosts"
 end
 
-function parse_base_force_name(force_name)
-  local base_name = string.match(force_name, FORCE_REGEX)
-  if base_name then
-      return base_name
-  else
-      return force_name
+
+--- Returns base force name for specified force name.
+--
+-- Passed-in force name is checked to see if it belongs to approval ghost force, and base force name is caluclated in
+-- that case. If passed-in name does not belong to approval ghost force, force name is returned unchanged - force is a
+-- base force for itself.
+--
+-- @param force_name Name of the force.
+--
+-- @return string Name of the base force.
+--
+function get_base_force_name(force_name)
+  -- Initialise the cache variable.
+  global.base_force_mapping_cache = global.base_force_cache or {}
+
+  -- Reuse the cached entry, extract base name from a ghost force name, or otherwise map the force name to itself.
+  if not global.base_force_mapping_cache[force_name] then
+    global.base_force_mapping_cache[force_name] = string.match(force_name, FORCE_REGEX) or force_name
   end
+
+  return global.base_force_mapping_cache[force_name]
 end
+
 
 function entity_debug_string(entity)
   return entity.type .. " of " .. entity.force.name .. " @ " .. serpent.line(entity.position)
@@ -171,7 +186,7 @@ function create_placeholder_for(unapproved_entity)
   local placeholder = unapproved_entity.surface.create_entity {
     name = "entity-ghost",
     position = unapproved_entity.position,
-    force = parse_base_force_name(unapproved_entity.force.name),
+    force = get_base_force_name(unapproved_entity.force.name),
     inner_name = "unapproved-ghost-placeholder"
   }
   -- game.print("Unapproved entity: " .. entity_debug_string(event.created_entity))
@@ -183,7 +198,7 @@ function remove_placeholder_for(unapproved_entity)
   -- Note: this search works only because the placeholder will be at the *same exact position* as the unapproved entity
   local placeholders = unapproved_entity.surface.find_entities_filtered {
     position = unapproved_entity.position,
-    force = parse_base_force_name(unapproved_entity.force.name),
+    force = get_base_force_name(unapproved_entity.force.name),
     ghost_name = "unapproved-ghost-placeholder"
   }
 
@@ -241,26 +256,31 @@ function is_approvable_ghost(entity)
   return entity and entity.type == "entity-ghost" and not is_placeholder(entity) and not is_perishable(entity) and is_selectable(entity)
 end
 
+
+--- Approves passed-in list of entities.
+--
+-- Each entity is checked to validate that it can be approved.
+--
+-- @param entities LuaEntity[] List of entities to approve.
+--
 function approve_entities(entities)
-  local baseForceCache = {}
 
   for _, entity in pairs(entities) do
     if is_approvable_ghost(entity) then
-      local base_force = baseForceCache[entity.force.name]
-      if not base_force then
-        local base_force_name = parse_base_force_name(entity.force.name)
-        base_force = game.forces[base_force_name]
-        baseForceCache[entity.force.name] = base_force
-      end
-      if (entity.force ~= base_force) then
+      local base_force_name = get_base_force_name(entity.force.name)
+
+      if entity.force.name ~= base_force_name then
+        entity.force = base_force_name
         remove_placeholder_for(entity)
-        entity.force = base_force
       end
+
       local badgeId = approvalBadges.getOrCreate(entity);
       approvalBadges.showApproved(badgeId)
     end
   end
+
 end
+
 
 function unapprove_entities(entities)
   local unapprovedForceCache = {}
@@ -632,7 +652,7 @@ script.on_event(defines.events.script_raised_revive,
     --       the main player force.  This is to resolve a compatibility issue between this mod and the Creative Mod mod,
     --       as well as potentially other mods too (the mod does have to use the raise_* flag however)
     local entity = event.entity
-    local base_force_name = parse_base_force_name(entity.force.name)
+    local base_force_name = get_base_force_name(entity.force.name)
     if (entity.force.name ~= base_force_name) then
       remove_placeholder_for(entity)
       entity.force = base_force_name
