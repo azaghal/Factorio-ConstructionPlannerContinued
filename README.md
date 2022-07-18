@@ -49,16 +49,16 @@ Roadmap
 
 ### Unscheduled
 
--   [ ] Use of entity filters with the approval tool (similar to deconstruction planner).
--   [ ] Approval support for ghost tiles.
--   [ ] Upgrade planner support for unapproved ghosts.
--   [ ] Improved graphics and icons.
--   [ ] In-game tips-and-tricks demonstration and documentation.
--   [ ] Show correct selection boxes around unapproved ghosts when using blueprint and deconstruction tools.
--   [ ] Support for force merging (merging unapproved ghosts forces in addition to merging of base forces).
--   [ ] Efficient means for force identification (if the regex is too slow).
--   [ ] Use on\_entity\_changed_force event handler for approval status badge updates if Wube Software ever implementes it.
--   [ ] Undo support for approve/unapprove actions.
+-   Use of entity filters with the approval tool (similar to deconstruction planner).
+-   Approval support for ghost tiles.
+-   Upgrade planner support for unapproved ghosts.
+-   Improved graphics and icons.
+-   In-game tips-and-tricks demonstration and documentation.
+-   Show correct selection boxes around unapproved ghosts when using blueprint and deconstruction tools.
+-   Support for force merging (merging unapproved ghosts forces in addition to merging of base forces).
+-   Efficient means for force identification (if the regex is too slow).
+-   Use on\_entity\_changed_force event handler for approval status badge updates if Wube Software ever implementes it.
+-   Undo support for approve/unapprove actions.
 
 
 How it works
