@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed crash when requesting deconstruction at beginning of the game (when unapproved ghost force has not been created yet).
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2022-07-19

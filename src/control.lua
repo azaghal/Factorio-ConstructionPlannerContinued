@@ -197,7 +197,7 @@ end
 function remove_unapproved_ghost_for(placeholder)
   local unapproved_ghosts = placeholder.surface.find_entities_filtered {
     position = placeholder.position,
-    force = to_unapproved_ghost_force_name(placeholder.force.name),
+    force = get_or_create_unapproved_ghost_force(placeholder.force),
     name = "entity-ghost"
   }
 
@@ -402,7 +402,7 @@ script.on_event(defines.events.on_player_setup_blueprint,
         end)
         
         if placeholderEntities and #placeholderEntities > 0 then
-          local force_name = to_unapproved_ghost_force_name(player.force.name)
+          local force_name = get_or_create_unapproved_ghost_force(player.force).name
           local unapprovedEntities = get_unapproved_ghost_bp_entities(event.surface, force_name, event.area)
 
           local unapprovedEntitiesByPosition = remap(unapprovedEntities, function(id, blueprintEntity)
@@ -517,7 +517,7 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
 
         get_deconstruction_planner().deconstruct_area {
           surface = entity.surface,
-          force = to_unapproved_ghost_force_name(player.force.name),
+          force = get_or_create_unapproved_ghost_force(player.force),
           area = global.player_setup_blueprint[player.index].area,
           skip_fog_of_war = false,
           by_player = player
@@ -544,7 +544,7 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       else
         get_deconstruction_planner().deconstruct_area{
           surface = entity.surface,
-          force = to_unapproved_ghost_force_name(entity.force.name),
+          force = get_or_create_unapproved_ghost_force(entity.force),
           area = {{entity.position.x, entity.position.y}, {entity.position.x, entity.position.y}},
           skip_fog_of_war = false,
           by_player = player}
@@ -606,7 +606,7 @@ script.on_event(defines.events.on_pre_build,
     if game.forces[unapproved_ghost_force_name] then
       local unapproved_ghosts = player.surface.find_entities_filtered {
         position = event.position,
-        force = to_unapproved_ghost_force_name(player.force.name),
+        force = get_or_create_unapproved_ghost_force(player.force),
         name = "entity-ghost"
       }
 
@@ -704,7 +704,7 @@ script.on_event(defines.events.on_player_deconstructed_area,
     if not event.alt  then
       get_deconstruction_planner().deconstruct_area{
         surface = event.surface,
-        force = to_unapproved_ghost_force_name(player.force.name),
+        force = get_or_create_unapproved_ghost_force(player.force),
         area = event.area,
         skip_fog_of_war = false,
         by_player = player
