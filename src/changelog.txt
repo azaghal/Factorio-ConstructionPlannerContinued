@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Prevent crash when undoing ghost placement if player is not holding anything in hand.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 2022-07-30

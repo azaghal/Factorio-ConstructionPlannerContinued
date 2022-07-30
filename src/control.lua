@@ -498,7 +498,7 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       -- If player triggered this using a deconstruction planner, only destroy the placeholder ghost entity
       -- itself. Removal of unapproved ghost entities will be taken care of by the on_player_deconstructed_area event
       -- handler, preserving the undo queue in the process.
-      elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "deconstruction-planner" then
+      elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
         entity.destroy()
 
       -- If player triggered this using the cut-and-paste tool, check if a blueprint had been set-up in the same tick as
@@ -511,7 +511,7 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       -- 1. If there is a mix of approved and unapproved ghost entities, they will be stored as two distinct items in
       --    the undo queue.
       --
-      elseif player and player.cursor_stack and player.cursor_stack.valid and player.cursor_stack.name == "cut-paste-tool" and
+      elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "cut-paste-tool" and
              global.player_setup_blueprint[player.index].age == event.tick and
              global.player_setup_blueprint[player.index].surface == entity.surface then
 
