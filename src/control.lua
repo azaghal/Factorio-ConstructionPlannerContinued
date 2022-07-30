@@ -128,6 +128,13 @@ function get_deconstruction_planner()
   if not global.deconstruction_planner_inventory then
     global.deconstruction_planner_inventory = game.create_inventory(1)
     global.deconstruction_planner_inventory.insert({ name = "deconstruction-planner" })
+
+    -- Make sure that the deconstruction planner cannot be used for deconstructing trees and rocks. Deconstruction
+    -- planner is used as a helper tool to preserve correct undo history. However, when used with cut-and-paste, we need
+    -- to make sure that the trees and rocks are not affected by it - since normal cut-and-paste tool does not touch
+    -- those either.
+    global.deconstruction_planner_inventory[1].entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
+    global.deconstruction_planner_inventory[1].trees_and_rocks_only = true
   end
 
   return global.deconstruction_planner_inventory[1]
@@ -511,16 +518,35 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       -- 1. If there is a mix of approved and unapproved ghost entities, they will be stored as two distinct items in
       --    the undo queue.
       --
+      -- 2. Deconstruction planner has been set-up to blacklist trees and rocks, so those will not get
+      --    included. However, cliffs are not covered by this black-listing - therefore we invoke canceling of area
+      --    deconstruction at the very end to ensure that cliffs are not marked for deconstruction by the unapproved
+      --    ghost force. We have to do this (alongside black-listing of trees/rocks) because player will not be able to
+      --    cancel deconstruction orders for the unapproved ghost force (and they should not be deconstructed in the
+      --    first place by the cut-paste-tool anyway).
+      --
       elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "cut-paste-tool" and
              global.player_setup_blueprint[player.index].age == event.tick and
              global.player_setup_blueprint[player.index].surface == entity.surface then
 
-        get_deconstruction_planner().deconstruct_area {
-          surface = entity.surface,
+        local deconstruction_planner = get_deconstruction_planner()
+        local surface = entity.surface
+
+        deconstruction_planner.deconstruct_area {
+          surface = surface,
           force = get_or_create_unapproved_ghost_force(player.force),
           area = global.player_setup_blueprint[player.index].area,
           skip_fog_of_war = false,
           by_player = player
+        }
+
+        -- Ensure that unapproved ghost force does not have any deconstruct orders left-over in the area. Primarily we
+        -- want to prevent deconstruction of cliffs.
+        deconstruction_planner.cancel_deconstruct_area {
+          surface = surface,
+          force = get_or_create_unapproved_ghost_force(player.force),
+          area = global.player_setup_blueprint[player.index].area,
+          skip_fog_of_war = false,
         }
 
       -- Script triggered the removal, and assigned it to player. Destroy placeholder entity directly (to prevent it
@@ -542,12 +568,27 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       --    then is eventual correctness of interaction with other mods that might be using the above Lua functions for
       --    something with expectation that the player's undo queue is preserved.
       else
+
+        local deconstruction_planner = get_deconstruction_planner()
+        local surface = entity.surface
+        local force = entity.force
+        local position = entity.position
+
         get_deconstruction_planner().deconstruct_area{
-          surface = entity.surface,
-          force = get_or_create_unapproved_ghost_force(entity.force),
-          area = {{entity.position.x, entity.position.y}, {entity.position.x, entity.position.y}},
+          surface = surface,
+          force = get_or_create_unapproved_ghost_force(force),
+          area = {{position.x, position.y}, {position.x, position.y}},
           skip_fog_of_war = false,
           by_player = player}
+
+        -- Ensure that unapproved ghost force does not have any deconstruct orders left-over in the area. Primarily we
+        -- want to prevent deconstruction of cliffs (see explanation for similar code in cut-and-paste handler above).
+        deconstruction_planner.cancel_deconstruct_area {
+          surface = surface,
+          force = get_or_create_unapproved_ghost_force(force),
+          area = {{position.x, position.y}, {position.x, position.y}},
+          skip_fog_of_war = false,
+        }
 
         entity.destroy()
       end

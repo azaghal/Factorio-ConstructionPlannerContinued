@@ -4,7 +4,9 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
-    - Prevent crash when undoing ghost placement if player is not holding anything in hand.
+    - Fixed crash when undoing ghost placement if player is not holding anything in hand.
+    - Fixed deconstruction of landscape (trees, rocks, cliffs) when using cut-and-paste.
+    - Fixed uncancelable deconstruction requests when using cut-and-paste tool or deconstruction planner.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 2022-07-30
