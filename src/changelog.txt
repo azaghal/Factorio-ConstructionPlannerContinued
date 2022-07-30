@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 1.1.2
+Date: 2022-07-30
   Bugfixes:
     - Fixed crash when undoing ghost placement if player is not holding anything in hand.
     - Fixed deconstruction of landscape (trees, rocks, cliffs) when using cut-and-paste.
