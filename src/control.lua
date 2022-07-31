@@ -630,7 +630,7 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       -- If player triggered this using a deconstruction planner, only destroy the placeholder ghost entity
       -- itself. Removal of unapproved ghost entities will be taken care of by the on_player_deconstructed_area event
       -- handler, preserving the undo queue in the process. The second condition is used in cases where play might be
-      -- holding destruction planner from the library (but there is no explicit check for it).
+      -- holding deconstruction planner from the library (but there is no explicit check for it).
       elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" or
              player and player.cursor_stack and not player.cursor_stack.valid_for_read and not player.is_cursor_empty() and not player.is_cursor_blueprint() then
         entity.destroy()
