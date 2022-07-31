@@ -1,7 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
+Version: 1.2.0
+Date: 2022-07-31
   Features:
     - Addition of /cp_cleanup console command that can be used to clean-up some inconsistencies in the savegame related to construction planner. Make sure to backup the savegame before using.
   Bugfixes:
