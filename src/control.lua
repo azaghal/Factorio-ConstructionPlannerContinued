@@ -366,6 +366,18 @@ function sync_underground_belt_rotation(underground_belt, matching_force)
     area = bounding_box
   }
 
+  -- Filter-out candidates that:
+  --
+  --   - Face the same way (first two conditions).
+  --   - Are orthogonal to each-other (third condition).
+  for index, candidate in pairs(possible_matching_underground_belts) do
+    if candidate.direction == underground_belt.direction and candidate.belt_to_ground_type == underground_belt.belt_to_ground_type or
+       core_util.oppositedirection(candidate.direction) == underground_belt.direction and candidate.belt_to_ground_type ~= underground_belt.belt_to_ground_type or
+       candidate.direction ~= underground_belt.direction and core_util.oppositedirection(candidate.direction) ~= underground_belt.direction then
+      possible_matching_underground_belts[index] = nil
+    end
+  end
+
   local matching_underground_belt = underground_belt.surface.get_closest(underground_belt.position, possible_matching_underground_belts)
 
   -- When underground belts are rotated, we actually change their input/output status (direction in which the items flow

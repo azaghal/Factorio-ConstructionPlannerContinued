@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fix underground belts pairing-up (for rotation/direction purposes) with orthogonal counterparts.
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2022-07-31
