@@ -2,6 +2,8 @@
 --       mod, and hope that other mods don't mess around with the forces too much.  For /editor force changes during
 --       testing, I can use a console command + remote interface to manually force a badge rescan.
 
+local core_util = require("util")
+
 local approvalBadges = require("control.approvalBadges")
 
 local UINT32_MAX = 4294967295
@@ -263,6 +265,83 @@ function approve_entities(entities)
 end
 
 
+--- Synchronises (ghost) underground belt rotation with matching ghost underground belt of different force. 
+--
+-- Matching ghost underground belt is the one that would normally connect to passed-in underground belt if they
+-- both belonged to the same force. No changes are made if no matching ghost underground belt can be found.
+--
+-- The passed-in underground belt is usually the one that has just been placed by the player.
+--
+-- This allows us to make sure the underground belt pairs have the same rotation prior to setting them to the same
+-- force. This has to be done in order to ensure that placed underground belt will correctly match the rotation of the
+-- existing, matching ghost underground belt.
+--
+-- @param underground_belt LuaEntity Regular or ghost underground belt that should be synced to an existing ghost underground belt.
+-- @param matching_force LuaForce Force to which the matching ghost underground belt should belong to.
+--
+function sync_underground_belt_rotation(underground_belt, matching_force)
+
+  local prototype =
+    underground_belt.name == "entity-ghost" and underground_belt.ghost_prototype or
+    underground_belt.prototype
+
+  -- Determine direction for finding the matching underground belt. It depends on both the direction the passed-in
+  -- entity is facing, and whether this is the input or output side of the underground belt (code might look a bit
+  -- convoluted, but is quite optimal).
+  local search_direction =
+    underground_belt.belt_to_ground_type == "output" and core_util.oppositedirection(underground_belt.direction) or
+    underground_belt.direction
+
+  -- Calculate bounding box for finding the matching ghost underground belt. Take into consideration the entity
+  -- position, the direction in which we need to search for matching ghost underground belt, and finally maximum
+  -- distance this type of underground belt can span.
+  local bounding_box = {
+
+    -- Exclude the passed-in belt itself from the search.
+    core_util.moveposition(
+      { underground_belt.position.x, underground_belt.position.y },
+      search_direction,
+      1
+    ),
+
+    core_util.moveposition(
+      { underground_belt.position.x, underground_belt.position.y },
+      search_direction,
+      prototype.max_underground_distance
+    )
+
+  }
+
+  -- Ensure that first point of bounding box is upper-left, and second bottom-right - otherwise
+  -- find_entities_filtered function does not return correct results.
+  if search_direction == defines.direction.north or search_direction == defines.direction.west then
+    bounding_box = {bounding_box[2], bounding_box[1]}
+  end
+
+  -- Find the matching ghost underground belt.
+  local possible_matching_underground_belts = underground_belt.surface.find_entities_filtered {
+    ghost_type = prototype.type,
+    ghost_name = prototype.name,
+    force = force,
+    area = bounding_box
+  }
+
+  local matching_underground_belt = underground_belt.surface.get_closest(underground_belt.position, possible_matching_underground_belts)
+
+  -- When underground belts are rotated, we actually change their input/output status (direction in which the items flow
+  -- across connected ground belts).
+  if matching_underground_belt then
+
+    -- One belt has to be input, while the other has to be output.
+    if underground_belt.belt_to_ground_type == matching_underground_belt.belt_to_ground_type then
+      underground_belt.rotate()
+    end
+
+  end
+
+end
+
+
 function unapprove_entities(entities)
   local unapprovedForceCache = {}
 
@@ -280,7 +359,15 @@ function unapprove_entities(entities)
       end
 
       if (entity.force ~= unapproved_force) then
-          entity.force = unapproved_force
+
+        -- Try to synchronise the underground belt rotation/direction with existing underground belt belonging to
+        -- regular/unapproved ghost force. If we do not do this bit of code, the belts always end-up facing opposite of
+        -- what the user would expect (older underground belt direction should take precedence).
+        if entity.ghost_prototype.type == "underground-belt" then
+          sync_underground_belt_rotation(entity, unapproved_force)
+        end
+
+        entity.force = unapproved_force
       end
 
       create_placeholder_for(entity)
@@ -371,27 +458,25 @@ script.on_event(defines.events.on_player_alt_selected_area,
 
 script.on_event(defines.events.on_built_entity,
   function(event)
-    -- game.print("construction-planner: detected new ghost entity " .. entity_debug_string(event.created_entity))
-    -- game.print("  Tags: " .. serpent.line(event.created_entity.tags))
-    
     local entity = event.created_entity
-
     local player = game.players[event.player_index]
-    if not is_auto_approve(player) then
-      unapprove_entities({event.created_entity})
-    else
-      approve_entities({event.created_entity})
+
+    if entity.type == "entity-ghost" then
+
+      if not is_auto_approve(player) then
+        unapprove_entities({entity})
+      else
+        approve_entities({entity})
+      end
+
+    elseif entity.type == "underground-belt" then
+
+      sync_underground_belt_rotation(entity, get_or_create_unapproved_ghost_force(entity.force))
+
     end
 
-    -- TODO: ask on the forums if is_shortcut_available can be made available for all mod-defined shortcuts
-    --       (but first ask in Discord if there's another way that I'm just missing)
-    -- if player.is_shortcut_available("give-construction-planner") and not is_auto_approve(player) then
-    --   unapprove_entities({event.created_entity})
-    -- else
-    --   approve_entities({event.created_entity})
-    -- end
   end,
-  {{ filter="type", type="entity-ghost"}}
+  {{ filter="type", type="entity-ghost"}, {filter="type", type="underground-belt"}}
 )
 
 script.on_event(defines.events.on_player_setup_blueprint,

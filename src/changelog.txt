@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed unapproved underground belts reversing when connecting to existing (approved/unapproved) underground belts.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.2
 Date: 2022-07-30
