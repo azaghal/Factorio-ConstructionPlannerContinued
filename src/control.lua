@@ -203,18 +203,58 @@ function get_unapproved_ghost_bp_entities(surface, force, area)
   return bp.get_blueprint_entities()
 end
 
-function remove_unapproved_ghost_for(placeholder)
+
+--- Retrieves list of unapproved ghosts matching a placeholder.
+--
+-- Normally only one unapproved ghost should match a placeholder.
+--
+-- @param placeholder LuaEntity Placeholder for which to find unapproved ghost entities.
+--
+-- @return {LuaEntity} List of unapproved ghosts.
+--
+function get_unapproved_ghost_for(placeholder)
   local unapproved_ghosts = placeholder.surface.find_entities_filtered {
     position = placeholder.position,
     force = get_or_create_unapproved_ghost_force(placeholder.force),
     name = "entity-ghost"
   }
 
+  return unapproved_ghosts
+end
+
+
+--- Retrieves list of placeholders corresponding to unapproved ghost.
+--
+-- Normally only a single placeholder should be returned.
+--
+-- @param unapproved_ghost LuaEntity Unapproved ghost entity.
+--
+-- @return {LuaEntity} List of placeholder entities corresponding to the specified unapproved ghost entity.
+--
+function get_placeholder_for(unapproved_ghost)
+  local placeholders = unapproved_ghost.surface.find_entities_filtered {
+    position = unapproved_ghost.position,
+    force = get_base_force_name(unapproved_ghost.force.name),
+    ghost_name = "unapproved-ghost-placeholder"
+  }
+
+  return placeholders
+end
+
+
+--- Removes unapproved ghosts for passed-in placeholder.
+--
+-- @param placeholder LuaEntity Placeholder for which to remove unapproved ghost entities. 
+--
+function remove_unapproved_ghost_for(placeholder)
+  local unapproved_ghosts = get_unapproved_ghost_for(placeholder)
+
   -- Only one placeholder is expected, but if multiple are discovered for whatever reason, just remove them all
   for _, unapproved_ghost in pairs(unapproved_ghosts) do
     unapproved_ghost.destroy()
   end
 end
+
 
 function is_auto_approve(player)
   return settings.get_player_settings(player)[SETTING_AUTO_APPROVE].value
@@ -898,6 +938,138 @@ script.on_event(defines.events.on_player_deconstructed_area,
     end
 
   end
+)
+
+
+--- Cleans-up invalid entities and deconstruction orders that may have happened due to bugs etc.
+--
+-- Takes care of the following:
+--
+--   - Drops deconstruction orders for unapproved ghost force.
+--   - Removes placeholders with no matching entities beneath them.
+--   - Creates placeholders for unapproved ghost entities that do not have any.
+--
+-- @param base_force LuaForce Base force (to which the players belong).
+-- @param unapproved_ghost_force LuaForce Unapproved ghost force (which owns the unapproved ghost entities).
+--
+function cleanup_invalid_entities_and_deconstruction_orders(base_force, unapproved_ghost_force)
+  for _, surface in pairs(game.surfaces) do
+
+    -- There was a number of bugs related to handling of cut-and-paste and deconstruction planners that would result in
+    -- the unapproved ghost force ordering deconstruction of things like cliffs, trees, rocks etc, which the base force
+    -- then cannot clear. Make sure such orders are not present for the unapproved ghost force (this force should not
+    -- have any deconstruction orders in the first place).
+    local entities_for_deconstruction = surface.find_entities_filtered {
+      to_be_deconstructed = true
+    }
+
+    for _, entity in pairs(entities_for_deconstruction) do
+      if entity.is_registered_for_deconstruction(unapproved_ghost_force) then
+        entity.cancel_deconstruction(unapproved_ghost_force)
+      end
+    end
+
+    -- Placeholders should not exist on their own. Find any that do, and get rid of them.
+    local placeholders = surface.find_entities_filtered {
+      force = base_force,
+      ghost_name = "unapproved-ghost-placeholder",
+    }
+
+    for _, placeholder in pairs(placeholders) do
+      if table_size(get_unapproved_ghost_for(placeholder)) == 0 then
+        placeholder.destroy()
+      end
+    end
+
+    -- Unapproved ghost entities should exist with one and only one placeholder. Drop excess placeholders, or create the
+    -- missing ones.
+    local unapproved_ghosts = surface.find_entities_filtered {
+      force = unapproved_ghost_force,
+      name = "entity-ghost",
+    }
+
+    for _, ghost in pairs(unapproved_ghosts) do
+      local placeholders = get_placeholder_for(ghost)
+
+      if table_size(placeholders) > 1 then
+        table.remove(placeholders)
+        for _, placeholder in pairs(placeholders) do
+          placeholder.destroy()
+        end
+
+      elseif table_size(placeholders) == 0 then
+        create_placeholder_for(ghost)
+      end
+
+    end
+
+    -- Update approval badges for base force (approved) ghost entities.
+    local ghost_entities = surface.find_entities_filtered {
+      force = base_force,
+      name = "entity-ghost",
+    }
+
+    for _, entity in pairs(ghost_entities) do
+      if not is_placeholder(entity) then
+        local badge_id = approvalBadges.getOrCreate(entity)
+        approvalBadges.showApproved(badge_id)
+      end
+    end
+
+    -- Update approval badges for unapproved ghost force entities.
+    local ghost_entities = surface.find_entities_filtered {
+      force = unapproved_ghost_force,
+      name = "entity-ghost",
+    }
+
+    for _, entity in pairs(ghost_entities) do
+      if not is_placeholder(entity) then
+        local badge_id = approvalBadges.getOrCreate(entity)
+        approvalBadges.showUnapproved(badge_id)
+      end
+    end
+
+  end
+end
+
+
+--- Command for cleaning-up incosistent state created by previous bugs in the mod.
+--
+-- @param command CustomCommandData Command data as passed-in by the game engine.
+--
+function command_cp_cleanup(command)
+  local player = game.players[command.player_index]
+  local unapproved_ghost_force
+
+  global.commands = global.commands or {}
+  global.commands.cp_cleanup = global.commands.cp_cleanup or {}
+
+  if not global.commands.cp_cleanup.invoked_at or command.tick - global.commands.cp_cleanup.invoked_at > 600 then
+    global.commands.cp_cleanup.invoked_at = command.tick
+    player.print({"warning.cp-cleanup-command-confirm"})
+    return
+  end
+
+  -- Reset the last invocation time.
+  global.commands.cp_cleanup.invoked_at = nil
+
+  game.print({"warning.cp-cleanup-command-started"})
+
+  for _, force in pairs(game.forces) do
+    if not is_unapproved_ghost_force_name(force.name) then
+      unapproved_ghost_force = get_or_create_unapproved_ghost_force(force)
+      cleanup_invalid_entities_and_deconstruction_orders(force, unapproved_ghost_force)
+    end
+  end
+
+  game.print({"warning.cp-cleanup-command-finished"})
+
+end
+
+commands.add_command(
+  "cp_cleanup",
+  "Cleans-up and fixes inconsistencies cause by bugs. Please back-up your savegame before running. Must be invoked twice in row to prevent accidents.",
+  command_cp_cleanup
 )
 
 -------------------------------------------------------------------------------
