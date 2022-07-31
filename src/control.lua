@@ -533,7 +533,7 @@ script.on_event(defines.events.on_player_setup_blueprint,
           return is_bp_placeholder(blueprintEntity)
         end)
         
-        if placeholderEntities and #placeholderEntities > 0 then
+        if placeholderEntities and table_size(placeholderEntities) > 0 then
           local force_name = get_or_create_unapproved_ghost_force(player.force).name
           local unapprovedEntities = get_unapproved_ghost_bp_entities(event.surface, force_name, event.area)
 
@@ -582,11 +582,11 @@ script.on_event(defines.events.on_player_setup_blueprint,
         end
       end
     end
-    
+
+    -- Cover both creation of blueprint (first condition), and use of cut/copy/paste tools (cursor check).
     if (player.blueprint_to_setup.valid_for_read) then
       adjust_blueprint(player.blueprint_to_setup)
-    end
-    if (player.is_cursor_blueprint()) then
+    elseif (player.is_cursor_blueprint()) then
       adjust_blueprint(player.cursor_stack)
 
       -- Player may have set-up the blueprint by invoking the cut-paste-tool. Store:

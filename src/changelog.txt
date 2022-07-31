@@ -8,6 +8,7 @@ Date: 9999-99-99
     - Fixed unapproved underground belts reversing when connecting to existing (approved/unapproved) underground belts.
     - Fixed deconstruction planner handling to avoid marking wrong entities for deconstruction (cliffs, fish, filtered entities if deconstruction planne is used from inventory).
     - Fixed deconstruction planner handling to avoid creating uncancelable deconstruction orders for the unapproved ghost force.
+    - Fixed issue where copying/blueprinting a mix of approved ghosts and unapproved ghosts would in some cases result in unapproved ghosts being dropped from the resulting blueprint.
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.2
 Date: 2022-07-30
