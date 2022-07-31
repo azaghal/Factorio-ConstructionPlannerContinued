@@ -589,8 +589,10 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
 
       -- If player triggered this using a deconstruction planner, only destroy the placeholder ghost entity
       -- itself. Removal of unapproved ghost entities will be taken care of by the on_player_deconstructed_area event
-      -- handler, preserving the undo queue in the process.
-      elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
+      -- handler, preserving the undo queue in the process. The second condition is used in cases where play might be
+      -- holding destruction planner from the library (but there is no explicit check for it).
+      elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" or
+             player and player.cursor_stack and not player.cursor_stack.valid_for_read and not player.is_cursor_empty() and not player.is_cursor_blueprint() then
         entity.destroy()
 
       -- If player triggered this using the cut-and-paste tool, check if a blueprint had been set-up in the same tick as
@@ -826,15 +828,73 @@ script.on_event(defines.events.on_player_deconstructed_area,
 
     local player = game.players[event.player_index]
 
-    -- Trigger on normal selection only in order to avoid messing with canceling deconstruction of rocks etc.
-    if not event.alt  then
-      get_deconstruction_planner().deconstruct_area{
+    -- Bail-out if player is canceling deconstruction.
+    if event.alt then
+      return
+    end
+
+    -- If player is using deconstruction planner from inventory, we can simply reuse it against the area, just against
+    -- the unapproved ghost force. However, if it comes from the library, we simply cannot get _any_ information about
+    -- it whatsoever, and resort to removing all unapproved ghosts instead.
+    if player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
+      player.cursor_stack.deconstruct_area{
         surface = event.surface,
         force = get_or_create_unapproved_ghost_force(player.force),
         area = event.area,
         skip_fog_of_war = false,
         by_player = player
       }
+
+      local unapproved_ghosts = event.surface.find_entities_filtered {
+        area = event.area,
+        force = get_or_create_unapproved_ghost_force(player.force),
+        type = "entity-ghost",
+      }
+
+      if player.cursor_stack.entity_filter_mode == defines.deconstruction_item.entity_filter_mode.blacklist then
+        for _, unapproved_ghost in pairs(unapproved_ghosts) do
+          remove_placeholder_for(unapproved_ghost)
+          create_placeholder_for(unapproved_ghost)
+        end
+      end
+    else
+      local deconstruction_planner = get_deconstruction_planner()
+
+      local unapproved_ghost_entities = event.surface.find_entities_filtered {
+        area = event.area,
+        force = get_or_create_unapproved_ghost_force(player.force),
+        name = "entity-ghost"
+      }
+
+      -- Bail out if there is nothing for us to do here.
+      if table_size(unapproved_ghost_entities) == 0 then
+        return
+      end
+
+      -- Alter deconstruction planner to only remove ghost entities.
+      -- @TODO: Refactor this whole mess with deconstruction planners to have multiples for different purposes instead.
+      deconstruction_planner.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
+      deconstruction_planner.trees_and_rocks_only = false
+      deconstruction_planner.set_entity_filter(1, "entity-ghost")
+
+      player.create_local_flying_text {
+        text = {"warning.cp-library-deconstruction-planners-support"},
+        create_at_cursor = true,
+      }
+
+      deconstruction_planner.deconstruct_area{
+        surface = event.surface,
+        force = get_or_create_unapproved_ghost_force(player.force),
+        area = event.area,
+        skip_fog_of_war = false,
+        by_player = player
+      }
+
+      -- Reset the deconstruction planner.
+      -- @TODO: Refactor this whole mess as per-above.
+      deconstruction_planner.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
+      deconstruction_planner.trees_and_rocks_only = true
+      deconstruction_planner.set_entity_filter(1, nil)
     end
 
   end

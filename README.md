@@ -43,6 +43,7 @@ Known issues
 -   Construction bots already en route to approved ghosts will not turn around until they reach the build site. However, no unapproved entities will be built. Compare this to deconstruction of a ghost, when the bots do turn around immediatelly.
 -   Approving/unapproving itself cannot be undone. When ghost entities get approved, and personal robots construct them, undoing will _not_ cause those newly built entities to be marked for deconstruction. Approve/unapprove actions themselves are not put into the undo queue. Be careful not to accidentally undo some unrelated part of the base in this manner.
 -   Unapproved ghosts cannot be used for correctly replacing content of an existing blueprint. This is limitation on the game's modding API.
+-   Filters and settings from deconstruction planners from blueprint library cannot be applied to unapproved ghost entities. This is limtiation on the game's modding API. The mod will instead opt to delete all unapproved ghosts from the selected area.
 
 
 Roadmap
