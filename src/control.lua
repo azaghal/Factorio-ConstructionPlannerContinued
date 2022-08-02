@@ -224,6 +224,23 @@ function get_base_force(force)
 end
 
 
+--- Returns complement force to passed-in force.
+--
+-- Complement force for base force is unapproved ghost force and vice-versa.
+--
+-- @param force LuaForce Force for which to return complement force.
+--
+-- @return LuaForce Complement force to passed-in force.
+--
+function get_complement_force(force)
+  if is_unapproved_ghost_force(force) then
+    return get_base_force(force)
+  end
+
+  return get_or_create_unapproved_ghost_force(force)
+end
+
+
 --- Returns a player-neutral mod-specific blueprint used for internal mod processing.
 --
 -- Function take care of initialisation as well.
@@ -469,22 +486,21 @@ function approve_entities(entities)
 end
 
 
---- Synchronises (ghost) underground belt rotation with matching ghost underground belt of different force. 
+--- Returns closest matching underground belt that belongs to specified force.
 --
--- Matching ghost underground belt is the one that would normally connect to passed-in underground belt if they
--- both belonged to the same force. No changes are made if no matching ghost underground belt can be found.
+-- The function is primarily useful for trying to pair-up underground belts of complement forces (base force and
+-- unapproved ghost force). Base game takes good care of pairing-up underground belts from the same force, but in case
+-- of unapproved ghost force, this has to be done by hand (and is somewhat error-prone).
 --
--- The passed-in underground belt is usually the one that has just been placed by the player.
+-- Keep in mind that when complement force is passed-in that the underground belt still might be paired-up with an
+-- underground belt of its own force - in which case it is better to let vanilla game handle rotation on its own.
 --
--- This allows us to make sure the underground belt pairs have the same rotation prior to setting them to the same
--- force. This has to be done in order to ensure that placed underground belt will correctly match the rotation of the
--- existing, matching ghost underground belt.
+-- @param underground_belt LuaEntity (Ghost) underground belt for which to find closest matching underground belt.
+-- @param force LuaForce Force to which the matching underground belt should belong.
 --
--- @param underground_belt LuaEntity Regular or ghost underground belt that should be synced to an existing ghost underground belt.
--- @param matching_force LuaForce Force to which the matching ghost underground belt should belong to.
+-- @return LuaEntity|nil Closest matching underground belt that belongs to specified force.
 --
-function sync_underground_belt_rotation(underground_belt, matching_force)
-
+function get_matching_underground_belt(underground_belt, force)
   local prototype =
     underground_belt.name == "entity-ghost" and underground_belt.ghost_prototype or
     underground_belt.prototype
@@ -522,39 +538,36 @@ function sync_underground_belt_rotation(underground_belt, matching_force)
     bounding_box = {bounding_box[2], bounding_box[1]}
   end
 
-  -- Find the matching ghost underground belt.
-  local possible_matching_underground_belts = underground_belt.surface.find_entities_filtered {
-    ghost_type = prototype.type,
-    ghost_name = prototype.name,
-    force = force,
-    area = bounding_box
-  }
+  -- Find the matching underground belts (both non-ghost and ghost ones).
+  local matching_underground_belts = {}
+  for _, entity in pairs(underground_belt.surface.find_entities_filtered{
+                           type = prototype.type,
+                           name = prototype.name,
+                           force = force,
+                           area = bounding_box}) do
+    table.insert(matching_underground_belts, entity)
+  end
+  for _, entity in pairs(underground_belt.surface.find_entities_filtered{
+                           ghost_type = prototype.type,
+                           ghost_name = prototype.name,
+                           force = force,
+                           area = bounding_box}) do
+    table.insert(matching_underground_belts, entity)
+  end
 
   -- Filter-out candidates that:
   --
   --   - Face the same way (first two conditions).
   --   - Are orthogonal to each-other (third condition).
-  for index, candidate in pairs(possible_matching_underground_belts) do
+  for index, candidate in pairs(matching_underground_belts) do
     if candidate.direction == underground_belt.direction and candidate.belt_to_ground_type == underground_belt.belt_to_ground_type or
        core_util.oppositedirection(candidate.direction) == underground_belt.direction and candidate.belt_to_ground_type ~= underground_belt.belt_to_ground_type or
        candidate.direction ~= underground_belt.direction and core_util.oppositedirection(candidate.direction) ~= underground_belt.direction then
-      possible_matching_underground_belts[index] = nil
+      matching_underground_belts[index] = nil
     end
   end
 
-  local matching_underground_belt = underground_belt.surface.get_closest(underground_belt.position, possible_matching_underground_belts)
-
-  -- When underground belts are rotated, we actually change their input/output status (direction in which the items flow
-  -- across connected ground belts).
-  if matching_underground_belt then
-
-    -- One belt has to be input, while the other has to be output.
-    if underground_belt.belt_to_ground_type == matching_underground_belt.belt_to_ground_type then
-      underground_belt.rotate()
-    end
-
-  end
-
+  return underground_belt.surface.get_closest(underground_belt.position, matching_underground_belts)
 end
 
 
@@ -584,14 +597,26 @@ function unapprove_entities(entities)
 
       if (entity.force ~= unapproved_force) then
 
-        -- Try to synchronise the underground belt rotation/direction with existing underground belt belonging to
-        -- regular/unapproved ghost force. If we do not do this bit of code, the belts always end-up facing opposite of
-        -- what the user would expect (older underground belt direction should take precedence).
+        -- In case of underground belts, we need to figure out if their rotation needs to be corrected. This has to be
+        -- done prior to changing the force. Once the force changes, game engine will most likely incorrectly rotate the
+        -- paired underground belts.
+        local rotate_entity = false
+
         if entity.ghost_prototype.type == "underground-belt" then
-          sync_underground_belt_rotation(entity, unapproved_force)
+          local matching_underground_belt = get_matching_underground_belt(entity, get_complement_force(entity.force))
+
+          -- Make sure the matched underground belt from complement force has no counterpart of its own already.
+          if matching_underground_belt and not get_matching_underground_belt(matching_underground_belt, matching_underground_belt.force) then
+            rotate_entity = matching_underground_belt and entity.belt_to_ground_type == matching_underground_belt.belt_to_ground_type or false
+          end
         end
 
         entity.force = unapproved_force
+
+        -- Rotate the underground belt if required.
+        if rotate_entity then
+          entity.rotate()
+        end
       end
 
       create_placeholder_for(entity)
@@ -697,9 +722,17 @@ script.on_event(defines.events.on_built_entity,
         approve_entities({entity})
       end
 
-    elseif entity.type == "underground-belt" then
+    elseif entity.type == "underground-belt" and not entity.neighbours then
 
-      sync_underground_belt_rotation(entity, get_or_create_unapproved_ghost_force(entity.force))
+      -- If underground belt has no matching underground belt in its own force, try to orient it in same direction as a
+      -- matching underground belt in complement force (if any) - but only if the matching underground belt from
+      -- complement force is not already paired up with another undeground belt from its own force.
+      local matching_underground_belt = get_matching_underground_belt(entity, get_complement_force(entity.force))
+
+      if matching_underground_belt and not get_matching_underground_belt(matching_underground_belt, matching_underground_belt.force)
+         and entity.belt_to_ground_type == matching_underground_belt.belt_to_ground_type then
+        entity.rotate()
+      end
 
     end
 
