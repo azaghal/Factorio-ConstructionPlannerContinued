@@ -1108,6 +1108,11 @@ script.on_event(defines.events.on_player_deconstructed_area,
     -- the unapproved ghost force. However, if it comes from the library, we simply cannot get _any_ information about
     -- it whatsoever, and resort to removing all unapproved ghosts instead.
     if player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
+
+      -- Make sure we do not touch the tiles (we can even crash the game this way apparently).
+      local saved_tile_selection_mode = player.cursor_stack.tile_selection_mode
+      player.cursor_stack.tile_selection_mode = defines.deconstruction_item.tile_selection_mode.never
+
       player.cursor_stack.deconstruct_area{
         surface = event.surface,
         force = get_or_create_unapproved_ghost_force(player.force),
@@ -1115,6 +1120,9 @@ script.on_event(defines.events.on_player_deconstructed_area,
         skip_fog_of_war = false,
         by_player = player
       }
+
+      -- Restore player's destruction planner to original state.
+      player.cursor_stack.tile_selection_mode = saved_tile_selection_mode
 
       local unapproved_ghosts = event.surface.find_entities_filtered {
         area = event.area,

@@ -6,6 +6,8 @@ Date: 9999-99-99
   Bugfixes:
     - Fixed underground belts pairing-up (for rotation/direction purposes) with orthogonal counterparts.
     - Fixed underground belt not pairing-up correctly with existing unapproved underground belts.
+    - Fixed (hard) crash when undoing changes after the deconstruction planner has been used against area with tiles.
+    - Fixed tiles getting deconstruction orders when using deconstruction planner.
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2022-07-31
