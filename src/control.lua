@@ -1180,6 +1180,31 @@ script.on_event(defines.events.on_player_deconstructed_area,
 )
 
 
+script.on_event(defines.events.on_player_rotated_entity,
+  function(event)
+    local entity = event.entity
+
+    -- Try to rotate the base force and unapproved ghost force underground belts when they match each-other.
+    if entity.name == "entity-ghost" and entity.ghost_type == "underground-belt" or
+       entity.type == "underground-belt" then
+
+      -- Grab both same-force and complement force matching underground belts.
+      local force_underground = get_matching_underground_belt(entity, entity.force)
+      local complement_force_underground = get_matching_underground_belt(entity, get_complement_force(entity.force))
+
+      -- Let the game engine handle undergrounds belonging to same force, and for underground belts from complemental
+      -- forces rotate them only if they match each-other.
+      if not force_underground and complement_force_underground and
+         not get_matching_underground_belt(complement_force_underground, complement_force_underground.force) and
+         get_matching_underground_belt(complement_force_underground, entity.force) == entity and
+         entity.belt_to_ground_type == complement_force_underground.belt_to_ground_type then
+        complement_force_underground.rotate()
+      end
+    end
+  end
+)
+
+
 -------------------------------------------------------------------------------
 --       COMMANDS
 -------------------------------------------------------------------------------

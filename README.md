@@ -44,6 +44,8 @@ Known issues
 -   Approving/unapproving itself cannot be undone. When ghost entities get approved, and personal robots construct them, undoing will _not_ cause those newly built entities to be marked for deconstruction. Approve/unapprove actions themselves are not put into the undo queue. Be careful not to accidentally undo some unrelated part of the base in this manner.
 -   Unapproved ghosts cannot be used for correctly replacing content of an existing blueprint. This is limitation on the game's modding API.
 -   Filters and settings from deconstruction planners from blueprint library cannot be applied to unapproved ghost entities. This is limtiation on the game's modding API. The mod will instead opt to delete all unapproved ghosts from the selected area.
+-   Underground belt rotation can get messed-up when approving/unapproving ghost entities. Due to how game engine handles underground belt orientation (preventing inconsistencies for belts of the same force), it is not possible to fix this via mod.
+-   Underground belt rotation might not always rotate the most obvious underground belt.
 
 
 Roadmap

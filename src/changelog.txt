@@ -3,6 +3,7 @@ Version: 999.999.999
 Date: 9999-99-99
   Changes:
   Features:
+    - Unapproved underground belts and their non-unapproved counterparts can now be rotated together, with some caveats in logic.
   Bugfixes:
     - Fixed underground belts pairing-up (for rotation/direction purposes) with orthogonal counterparts.
     - Fixed underground belt not pairing-up correctly with existing unapproved underground belts.
