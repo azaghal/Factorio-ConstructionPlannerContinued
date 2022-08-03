@@ -1004,6 +1004,23 @@ script.on_event(defines.events.on_pre_build,
       if place_type == "underground-belt" or place_type == "electric-pole" or place_type == "pipe-to-ground" then
         return
       end
+
+      -- Use selection box of the item that the user is currently holding to find overlap with unapproved ghost entities.
+      local box = cursor_stack.prototype.place_result.selection_box
+      local area = {
+          { event.position.x + box.left_top.x, event.position.y + box.left_top.y },
+          { event.position.x + box.right_bottom.x, event.position.y + box.right_bottom.y },
+        }
+      local unapproved_ghosts = player.surface.find_entities_filtered {
+        area = area,
+        force = get_or_create_unapproved_ghost_force(player.force),
+        name = "entity-ghost"
+      }
+
+      if #unapproved_ghosts > 0 then
+        -- game.print("Approving " .. #unapproved_ghosts .. " ghosts on pre-build")
+        approve_entities(unapproved_ghosts)
+      end
     end
 
     local unapproved_ghosts = player.surface.find_entities_filtered {

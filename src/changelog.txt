@@ -10,6 +10,7 @@ Date: 9999-99-99
     - Fixed (hard) crash when undoing changes after the deconstruction planner has been used against area with tiles.
     - Fixed tiles getting deconstruction orders when using deconstruction planner.
     - Fixed accidental approvals when drag-building "gappable" entities (underground belts an pipes, electric poles) over unapproved ghosts.
+    - Fixed placeholders staying behind when player is building on top of unapproved ghosts if replacement entity does not have the same center as the unapproved ghost.
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2022-07-31
