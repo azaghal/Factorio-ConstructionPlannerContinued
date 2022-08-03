@@ -627,6 +627,41 @@ function unapprove_entities(entities)
 end
 
 
+--- Processes correction queue for recently approved ghost entities.
+--
+-- Unapproves all valid ghost entities, empties the queue, and deregisters handler from the on_tick event.
+--
+-- Correction queue is used for storing ghost entities that get approved during the on_pre_build event by draggable
+-- entities that leave gaps (underground belts, electric poles, underground pipes). Such draggable entities will trigger
+-- the event on every tile dragged without necessarily resulting in entity placement.
+--
+-- Since we cannot detect at that point if placement will happen or not, we preventively approve the intersecting
+-- unapproved ghosts in order to ensure that if placement does happen, the unapproved ghost will end-up in player's undo
+-- queue (alongside with preserving the recipe settings etc). Additional bonus is that we avoid having leftover
+-- placeholders when the placed draggable entity does not overlap them.
+--
+-- This function needs to be registered for invocation during the next game tick to ensure the ghosts remain unapproved
+-- (if they did not get replaced by an actual draggable entity).
+--
+function process_unapproved_ghosts_correction_queue()
+  if global.unapproved_ghosts_correction_queue then
+    -- Ghosts that are still valid have obvisouly not been replaced, so they should be switched back to their original
+    -- (unapproved) state.
+    for unit_number, ghost in pairs(global.unapproved_ghosts_correction_queue) do
+      if ghost.valid then
+        unapprove_entities({ghost})
+      end
+    end
+
+    -- Mark the queue as processed.
+    global.unapproved_ghosts_correction_queue = nil
+
+    -- The queue has been processed, deregister handler to avoid performance issues.
+    script.on_event(defines.events.on_tick, nil)
+  end
+end
+
+
 -------------------------------------------------------------------------------
 --       EVENTS
 -------------------------------------------------------------------------------
@@ -711,6 +746,7 @@ script.on_event(defines.events.on_player_alt_selected_area,
 
 script.on_event(defines.events.on_built_entity,
   function(event)
+
     local entity = event.created_entity
     local player = game.players[event.player_index]
 
@@ -1001,10 +1037,6 @@ script.on_event(defines.events.on_pre_build,
     if cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype then
       local place_type = cursor_stack.prototype.place_result and cursor_stack.prototype.place_result.type
 
-      if place_type == "underground-belt" or place_type == "electric-pole" or place_type == "pipe-to-ground" then
-        return
-      end
-
       -- Use selection box of the item that the user is currently holding to find overlap with unapproved ghost entities.
       local box = cursor_stack.prototype.place_result.selection_box
       local area = {
@@ -1018,7 +1050,21 @@ script.on_event(defines.events.on_pre_build,
       }
 
       if #unapproved_ghosts > 0 then
-        -- game.print("Approving " .. #unapproved_ghosts .. " ghosts on pre-build")
+
+        -- Draggable entities that create gaps produce on_pre_build event every tile they are dragged, even if no entity
+        -- gets built. Some special processing needs to happen to have the undo queue behave correctly and to avoid
+        -- ending-up with bogus placeholders. See documentation for process_unapproved_ghosts_correction_queue function
+        -- for more details.
+        if event.created_by_moving and place_type == "underground-belt" or place_type == "electric-pole" or place_type == "pipe-to-ground" then
+          global.unapproved_ghosts_correction_queue = global.unapproved_ghosts_correction_queue or {}
+          for _, ghost in pairs(unapproved_ghosts) do
+            global.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
+          end
+
+          -- Ensure that the correction queue gets processed during next game tick.
+          script.on_event(defines.events.on_tick, process_unapproved_ghosts_correction_queue)
+        end
+
         approve_entities(unapproved_ghosts)
       end
     end
