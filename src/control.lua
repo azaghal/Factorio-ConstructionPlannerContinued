@@ -995,6 +995,17 @@ script.on_event(defines.events.on_pre_build,
       return
     end
 
+    -- When dragging with "gappable" item stacks, they produce the on_pre_build event on every tile passed-over without
+    -- actually building any entity. Detect use of such items and prevent ghost approval for them.
+    -- @TODO: Check on modding forum if this is an actual bug in modding API or not.
+    if cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype then
+      local place_type = cursor_stack.prototype.place_result and cursor_stack.prototype.place_result.type
+
+      if place_type == "underground-belt" or place_type == "electric-pole" or place_type == "pipe-to-ground" then
+        return
+      end
+    end
+
     local unapproved_ghosts = player.surface.find_entities_filtered {
       position = event.position,
       force = get_or_create_unapproved_ghost_force(player.force),

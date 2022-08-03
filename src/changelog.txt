@@ -9,6 +9,7 @@ Date: 9999-99-99
     - Fixed underground belt not pairing-up correctly with existing unapproved underground belts.
     - Fixed (hard) crash when undoing changes after the deconstruction planner has been used against area with tiles.
     - Fixed tiles getting deconstruction orders when using deconstruction planner.
+    - Fixed accidental approvals when drag-building "gappable" entities (underground belts an pipes, electric poles) over unapproved ghosts.
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2022-07-31
