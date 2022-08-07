@@ -752,7 +752,13 @@ script.on_event(defines.events.on_built_entity,
 
     if entity.type == "entity-ghost" then
 
-      if not is_auto_approval_enabled(player) then
+      if entity.ghost_name == "unapproved-ghost-placeholder" then
+        -- Player should not be able to place unapproved ghost placeholders. This can happen when invoking the undo
+        -- action. Get rid of the placeholder at this point. As an interesting side-effect, this also makes the undo
+        -- action behave correctly when undoing "cancel deconstruction" action (most likely thanks to order in which
+        -- undo tries to revive ghosts - not 100% sure if this is deterministic, though).
+        entity.destroy()
+      elseif not is_auto_approval_enabled(player) then
         unapprove_entities({entity})
       else
         approve_entities({entity})
@@ -1273,6 +1279,36 @@ script.on_event(defines.events.on_player_rotated_entity,
          get_matching_underground_belt(complement_force_underground, entity.force) == entity and
          entity.belt_to_ground_type == complement_force_underground.belt_to_ground_type then
         complement_force_underground.rotate()
+      end
+    end
+  end
+)
+
+
+script.on_event(defines.events.on_cancelled_deconstruction,
+  function(event)
+    -- When canceling deconstruction, it can happen that bogus placeholders are left-over because they do overlap with
+    -- the selection box of target entity.
+    --
+    -- One option would be to keep state of all placeholders and/or unapproved ghosts, and register for their
+    -- destruction event. This might be the most correct way to do it, but would require more state handling.
+    --
+    -- The below approach is instead to assume that maximum entity size is 50x50, and try to increase the search area
+    -- for leftover placholders, dropping them in the process if they do not have a corresponding unapproved ghost. This
+    -- is a bit hacky, and it also might have an impact of performance, though.
+    --
+
+    local placeholders = event.entity.surface.find_entities_filtered {
+      area = {
+        { event.entity.position.x - 25, event.entity.position.y - 25 },
+        { event.entity.position.x + 25, event.entity.position.y + 25 }
+      },
+      ghost_name = "unapproved-ghost-placeholder"
+    }
+
+    for _, placeholder in pairs (placeholders) do
+      if table_size(get_unapproved_ghost_for(placeholder)) == 0 then
+        placeholder.destroy()
       end
     end
   end

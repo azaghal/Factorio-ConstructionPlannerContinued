@@ -4,6 +4,8 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed placeholders staying behind when canceling deconstruction of entities that do not overlap with the placeholder entity itself.
+    - Fixed undo queue with unapproved ghosts not being preserved correctly when canceling deconstruction.
 ---------------------------------------------------------------------------------------------------
 Version: 1.3.0
 Date: 2022-08-03
