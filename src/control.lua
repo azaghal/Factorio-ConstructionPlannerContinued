@@ -340,6 +340,33 @@ function remove_placeholder_for(unapproved_entity)
 end
 
 
+--- Removes invalid placeholders in vicinity of specified position (50x50 box centered on position).
+--
+-- Placeholder is invalid if:
+--
+--   - No matching unapproved ghost entity exists at its position.
+--
+-- @param surface LuaSurface Surface to search the placeholders for.
+-- @param position MapPosition Position on surface around which to search.
+--
+function remove_invalid_nearby_placeholders(surface, position)
+  local placeholders = surface.find_entities_filtered {
+    area = {
+      { position.x - 25, position.y - 25 },
+      { position.x + 25, position.y + 25 },
+    },
+    ghost_name = "unapproved-ghost-placeholder"
+  }
+
+  for _, placeholder in pairs (placeholders) do
+    if table_size(get_unapproved_ghost_for(placeholder)) == 0 then
+      placeholder.destroy()
+    end
+  end
+
+end
+
+
 --- Searches for entities in specified area that belong to passed-in force, and returns them as blueprint entities.
 --
 -- @param surface LuaSurface Surface to search for entities.
@@ -776,10 +803,16 @@ script.on_event(defines.events.on_built_entity,
         entity.rotate()
       end
 
+    elseif entity.type == "straight-rail" or entity.type == "curved-rail" then
+      -- Ideally, this should get handled via on_pre_build event. Unfortunately, when player is quick-building the rails
+      -- (as opposed to placing one by one or by dragging), that event never gets triggered. Therefore we are forced to
+      -- clean-up since at this point the unapproved ghost is already gone, and we might have bogus placeholders left
+      -- behind if the placeholder did not overlap selection box of a rail.
+      remove_invalid_nearby_placeholders(entity.surface, entity.position)
     end
 
   end,
-  {{ filter="type", type="entity-ghost"}, {filter="type", type="underground-belt"}}
+  {{ filter="type", type="entity-ghost"}, {filter="type", type="underground-belt"}, {filter="type", type="straight-rail"}, {filter="type", type="curved-rail"}}
 )
 
 
@@ -1296,21 +1329,7 @@ script.on_event(defines.events.on_cancelled_deconstruction,
     -- The below approach is instead to assume that maximum entity size is 50x50, and try to increase the search area
     -- for leftover placholders, dropping them in the process if they do not have a corresponding unapproved ghost. This
     -- is a bit hacky, and it also might have an impact of performance, though.
-    --
-
-    local placeholders = event.entity.surface.find_entities_filtered {
-      area = {
-        { event.entity.position.x - 25, event.entity.position.y - 25 },
-        { event.entity.position.x + 25, event.entity.position.y + 25 }
-      },
-      ghost_name = "unapproved-ghost-placeholder"
-    }
-
-    for _, placeholder in pairs (placeholders) do
-      if table_size(get_unapproved_ghost_for(placeholder)) == 0 then
-        placeholder.destroy()
-      end
-    end
+    remove_invalid_nearby_placeholders(event.entity.surface, event.entity.position)
   end
 )
 
