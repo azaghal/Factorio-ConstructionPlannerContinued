@@ -1057,7 +1057,7 @@ script.on_event(defines.events.on_pre_build,
     -- Do not approve the ghost if player is in process of placing ghosts. This will also deal with "fake" approvals
     -- when player is quickly dragging with a ghost entity (basically the on_pre_build will get triggered while still on
     -- top of the ghost placed in previous step, and approve it by mistake).
-    if event.shift_build or cursor_stack and (cursor_stack.is_blueprint or not cursor_stack.valid_for_read) then
+    if event.shift_build or cursor_stack and (cursor_stack.is_blueprint or cursor_stack.is_blueprint_book or not cursor_stack.valid_for_read) then
       return
     end
 
@@ -1073,8 +1073,8 @@ script.on_event(defines.events.on_pre_build,
     -- When dragging with "gappable" item stacks, they produce the on_pre_build event on every tile passed-over without
     -- actually building any entity. Detect use of such items and prevent ghost approval for them.
     -- @TODO: Check on modding forum if this is an actual bug in modding API or not.
-    if cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype then
-      local place_type = cursor_stack.prototype.place_result and cursor_stack.prototype.place_result.type
+    if cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype and cursor_stack.prototype.place_result then
+      local place_type = cursor_stack.prototype.place_result.type
 
       -- Use selection box of the item that the user is currently holding to find overlap with unapproved ghost entities.
       local box = cursor_stack.prototype.place_result.selection_box
