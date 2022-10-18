@@ -43,7 +43,7 @@ Known issues
 -   Construction bots already en route to approved ghosts will not turn around until they reach the build site. However, no unapproved entities will be built. Compare this to deconstruction of a ghost, when the bots do turn around immediatelly.
 -   Approving/unapproving itself cannot be undone. When ghost entities get approved, and personal robots construct them, undoing will _not_ cause those newly built entities to be marked for deconstruction. Approve/unapprove actions themselves are not put into the undo queue. Be careful not to accidentally undo some unrelated part of the base in this manner.
 -   Unapproved ghosts cannot be used for correctly replacing content of an existing blueprint. This is limitation on the game's modding API.
--   Filters and settings from deconstruction planners from blueprint library cannot be applied to unapproved ghost entities. This is limtiation on the game's modding API. The mod will instead opt to delete all unapproved ghosts from the selected area.
+-   Deconstruction planners from blueprint library have no effect on unapproved ghost entities. This is limtiation on the game's modding API.
 -   Underground belt rotation can get messed-up when approving/unapproving ghost entities. Due to how game engine handles underground belt orientation (preventing inconsistencies for belts of the same force), it is not possible to fix this via mod.
 -   Underground belt rotation might not always rotate the most obvious underground belt.
 
@@ -72,7 +72,7 @@ How it works
 -   At the same time, an invisible "placeholder" ghost entity is created at the same exact location, with same force as player's.  This is the actual entity that gets selected when an unapproved ghost is blueprinted or deconstructed.
 -   When a blueprint is created that includes placeholder entities, the mod edits the blueprint to swap out the placeholder blueprint data with the real ghost entity data. This is done by using a hidden blueprint to capture the same exact area for the unapproved ghost force, and then using the captured blueprint data to overwrite the placeholders in the player's blueprint.
 -   Likewise, when a placeholder entity is deconstructed or destroyed, the unapproved ghost is deconstructed or destroyed as well.
--   Undo is implemented by relying on multiple events, and the ability to use deconstruction planner that targets the unapproved ghosts force, while still assigning the deconstruction action to the player. This happens in addition to what the player has selected by hand, thus resulting in a separate step in the undo queue.
+-   Undo is implemented by relying on multiple events, and using a deconstruction planner to assign the deconstruction action to the player. This happens in addition to what the player has selected by hand, thus resulting in a separate step in the undo queue.
 
 
 Credits

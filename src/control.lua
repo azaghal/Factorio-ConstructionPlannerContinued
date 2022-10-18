@@ -484,7 +484,7 @@ function is_approvable_ghost(entity)
     return entity.type == "entity-ghost" and entity.ghost_prototype.selectable_in_game
   end
 
-  return entity and entity.type == "entity-ghost" and not is_placeholder(entity) and not is_perishable(entity) and is_selectable(entity)
+  return entity and entity.valid and entity.type == "entity-ghost" and not is_placeholder(entity) and not is_perishable(entity) and is_selectable(entity)
 end
 
 
@@ -510,6 +510,27 @@ function approve_entities(entities)
     end
   end
 
+end
+
+
+--- Approves all entities for a force in an area.
+--
+-- @param force LuaForce Force for which to approve the entities.
+-- @param surface LuaSurface Surface on which to search for unapproved ghost entities.
+-- @param area BoundingBox Area in which to search for unapporoved ghost entities.
+--
+-- @return {LuaEntity} List of entities that have been approved.
+--
+function approve_entities_in_area(force, surface, area)
+  local entities = surface.find_entities_filtered {
+    area = area,
+    force = get_or_create_unapproved_ghost_force(force),
+    type = "entity-ghost"
+  }
+
+  approve_entities(entities)
+
+  return entities
 end
 
 
@@ -689,6 +710,67 @@ function process_unapproved_ghosts_correction_queue()
 end
 
 
+--- Deconstructs unapproved ghosts in an area using a deconstruction planner.
+--
+-- Caveat: This function will deconstruct both unapproved _and_ approved entities. It is primarily meant for use where a
+-- player has already made a pass with a deconstruction planner, or when targeting singular entities.
+--
+-- @param player LuaPlayer Player on whose behalf the deconstruction is taking place.
+-- @param deconstruction_planner LuaItemStack Deconstruction planner to use.
+-- @param surface LuaSurface Surface on which to perform the deconstruction.
+-- @param area BoundingBox Area on passed-in surface to encompass with the deconstruction planner.
+--
+-- @return bool true, if at least one unapproved ghost has been deconstructed, false otherwise.
+--
+function deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, area)
+
+  -- In order for deconstruction planner to have an effect on them, all entities must belong to player's base
+  -- force. Approve all unapproved ghost entities in the area first (so they can be affected by player's deconstruction
+  -- planner).
+  local target_entities = approve_entities_in_area(player.force, surface, area)
+
+  -- Nothing to do, bail-out immediatelly (optimisation).
+  if table_size(target_entities) == 0 then
+    return false
+  end
+
+  -- Prepare a list of environment (neutral) entities that have not been already marked for
+  -- deconstruction. Deconstruction planner might affect them, so we want to ensure their deconstruction state is
+  -- preserved - only the (just-approved) entities should be taken into the account.
+  local preserved_environment_entities = surface.find_entities_filtered {
+    area = area,
+    type = {"cliff", "fish"},
+    to_be_deconstructed = false,
+  }
+
+  deconstruction_planner.deconstruct_area {
+    surface = surface,
+    force = player.force,
+    area = area,
+    skip_fog_of_war = false,
+    by_player = player
+  }
+
+  -- Restore deconstruction state of preserved environment entities.
+  for _, entity in pairs(preserved_environment_entities) do
+    entity.cancel_deconstruction(player.force)
+  end
+
+  -- Deconstruction planner might have filters that do not affect all of the unapproved ghosts. Make sure to unapprove
+  -- any remaining ghost entities.
+  unapprove_entities(target_entities)
+
+  -- Check if any entity is now invalid (it has been deconstructed).
+  for _, entity in pairs(target_entities) do
+    if not entity.valid then
+      return true
+    end
+  end
+
+  return false
+end
+
+
 -------------------------------------------------------------------------------
 --       EVENTS
 -------------------------------------------------------------------------------
@@ -725,20 +807,7 @@ script.on_event(defines.events.on_player_selected_area,
   function(event)
     if event.item == 'construction-planner' then
       local player = game.get_player(event.player_index)
-
-      -- Filter should only match 'unapproved' ghosts (ghost entities on the selecting player's unapproved ghost force)
-      local entities = event.surface.find_entities_filtered {
-        area = event.area,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        type = "entity-ghost"
-      }
-
-      if #entities > 0 then
-        -- game.print("construction-planner: approving "..tostring(#entities).." entities")
-
-        approve_entities(entities)
-
-        -- Note:  if the devs ever add support, I can also use "utility/upgrade_selection_started" at selection start
+      if table_size(approve_entities_in_area(player.force, event.surface, event.area)) > 0 then
         player.play_sound { path = "utility/upgrade_selection_ended" }
       end
     end
@@ -957,22 +1026,7 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
         local deconstruction_planner = get_deconstruction_planner()
         local surface = entity.surface
 
-        deconstruction_planner.deconstruct_area {
-          surface = surface,
-          force = get_or_create_unapproved_ghost_force(player.force),
-          area = global.player_setup_blueprint[player.index].area,
-          skip_fog_of_war = false,
-          by_player = player
-        }
-
-        -- Ensure that unapproved ghost force does not have any deconstruct orders left-over in the area. Primarily we
-        -- want to prevent deconstruction of cliffs.
-        deconstruction_planner.cancel_deconstruct_area {
-          surface = surface,
-          force = get_or_create_unapproved_ghost_force(player.force),
-          area = global.player_setup_blueprint[player.index].area,
-          skip_fog_of_war = false,
-        }
+        deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, global.player_setup_blueprint[player.index].area)
 
       -- Script triggered the removal, and assigned it to player. Destroy placeholder entity directly (to prevent it
       -- from reaching player's undo queue), and destroy the unapproved ghost entity through deconstruction planner (to
@@ -998,22 +1052,9 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
         local surface = entity.surface
         local force = entity.force
         local position = entity.position
+        local area = {{position.x, position.y}, {position.x, position.y}}
 
-        get_deconstruction_planner().deconstruct_area{
-          surface = surface,
-          force = get_or_create_unapproved_ghost_force(force),
-          area = {{position.x, position.y}, {position.x, position.y}},
-          skip_fog_of_war = false,
-          by_player = player}
-
-        -- Ensure that unapproved ghost force does not have any deconstruct orders left-over in the area. Primarily we
-        -- want to prevent deconstruction of cliffs (see explanation for similar code in cut-and-paste handler above).
-        deconstruction_planner.cancel_deconstruct_area {
-          surface = surface,
-          force = get_or_create_unapproved_ghost_force(force),
-          area = {{position.x, position.y}, {position.x, position.y}},
-          skip_fog_of_war = false,
-        }
+        deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, area)
 
         entity.destroy()
       end
@@ -1217,76 +1258,34 @@ script.on_event(defines.events.on_player_deconstructed_area,
       return
     end
 
-    -- If player is using deconstruction planner from inventory, we can simply reuse it against the area, just against
-    -- the unapproved ghost force. However, if it comes from the library, we simply cannot get _any_ information about
-    -- it whatsoever, and resort to removing all unapproved ghosts instead.
+    -- Only deconstruction planners from inventory are supported, since we cannot access _any_ information about
+    -- deconstruction planners that come from the library.
+    --
+    -- @TODO: Raise this up with Factorio developers and ask for feature to be able to read all the necessary
+    --        information about held deconstruction planner from the library.
     if player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
-
-      -- Make sure we do not touch the tiles (we can even crash the game this way apparently).
-      local saved_tile_selection_mode = player.cursor_stack.tile_selection_mode
-      player.cursor_stack.tile_selection_mode = defines.deconstruction_item.tile_selection_mode.never
-
-      player.cursor_stack.deconstruct_area{
-        surface = event.surface,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        area = event.area,
-        skip_fog_of_war = false,
-        by_player = player
-      }
-
-      -- Restore player's destruction planner to original state.
-      player.cursor_stack.tile_selection_mode = saved_tile_selection_mode
-
-      local unapproved_ghosts = event.surface.find_entities_filtered {
+      deconstruct_unapproved_ghosts(player, player.cursor_stack, event.surface, event.area)
+    else
+      -- Fix missing placeholders in case the library deconstruction planner has destroyed them.
+      local unapproved_entities = event.surface.find_entities_filtered {
         area = event.area,
         force = get_or_create_unapproved_ghost_force(player.force),
-        type = "entity-ghost",
+        type = "entity-ghost"
       }
 
-      if player.cursor_stack.entity_filter_mode == defines.deconstruction_item.entity_filter_mode.blacklist then
-        for _, unapproved_ghost in pairs(unapproved_ghosts) do
-          remove_placeholder_for(unapproved_ghost)
-          create_placeholder_for(unapproved_ghost)
+      for _, entity in pairs(unapproved_entities) do
+        if #get_placeholder_for(entity) == 0 then
+          create_placeholder_for(entity)
         end
       end
-    else
-      local deconstruction_planner = get_deconstruction_planner()
 
-      local unapproved_ghost_entities = event.surface.find_entities_filtered {
-        area = event.area,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        name = "entity-ghost"
-      }
-
-      -- Bail out if there is nothing for us to do here.
-      if table_size(unapproved_ghost_entities) == 0 then
-        return
+      -- Notify player about mod limitations if any unapproved entities were found in the requested area.
+      if #unapproved_entities > 0 then
+        player.create_local_flying_text {
+          text = {"warning.cp-library-deconstruction-planners-support"},
+          create_at_cursor = true,
+        }
       end
-
-      -- Alter deconstruction planner to only remove ghost entities.
-      -- @TODO: Refactor this whole mess with deconstruction planners to have multiples for different purposes instead.
-      deconstruction_planner.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.whitelist
-      deconstruction_planner.trees_and_rocks_only = false
-      deconstruction_planner.set_entity_filter(1, "entity-ghost")
-
-      player.create_local_flying_text {
-        text = {"warning.cp-library-deconstruction-planners-support"},
-        create_at_cursor = true,
-      }
-
-      deconstruction_planner.deconstruct_area{
-        surface = event.surface,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        area = event.area,
-        skip_fog_of_war = false,
-        by_player = player
-      }
-
-      -- Reset the deconstruction planner.
-      -- @TODO: Refactor this whole mess as per-above.
-      deconstruction_planner.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
-      deconstruction_planner.trees_and_rocks_only = true
-      deconstruction_planner.set_entity_filter(1, nil)
     end
 
   end
