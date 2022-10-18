@@ -1,9 +1,8 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
+Version: 2.0.0
+Date: 2022-10-19
   Changes:
     - Deconstruction planners from library no longer deconstruct unapproved ghosts.
-  Features:
   Bugfixes:
     - Fixed crash when player deconstructs area with deconstruction planner from game/player library due to mismatch between deconstruction force and player force.
 ---------------------------------------------------------------------------------------------------
