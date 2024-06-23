@@ -7,7 +7,7 @@
     "description": "Ghosts require player's approval before construction bots are dispatched. This gives the player improved control over what parts of the factory get built, and when.",
     "factorio_version": "1.1",
     "dependencies": [
-        "base >= 1.1.61",
+        "base >= 1.1.86",
         "! ConstructionPlanner"
     ]
 }

@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed entity duplication when blueprinting unapproved ghosts (due to changes introduced in Factorio 1.1.86).
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.0
 Date: 2022-10-19

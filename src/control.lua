@@ -892,60 +892,19 @@ script.on_event(defines.events.on_player_setup_blueprint,
 
     local player = game.players[event.player_index]
 
+    -- Remove placeholder entities.
     local adjust_blueprint = function(blueprint)
       local blueprintEntities = blueprint.get_blueprint_entities()
-      if blueprintEntities and #blueprintEntities > 0 then
-        local placeholderEntities = filter(blueprintEntities, function(id, blueprintEntity)
-          return is_bp_placeholder(blueprintEntity)
-        end)
-        
-        if placeholderEntities and table_size(placeholderEntities) > 0 then
-          local force = get_or_create_unapproved_ghost_force(player.force)
-          local unapprovedEntities = get_entities_as_blueprint_entities(event.surface, force, event.area)
-
-          local unapprovedEntitiesByPosition = remap(unapprovedEntities, function(id, blueprintEntity)
-            return position_string(blueprintEntity.position), blueprintEntity
-          end)
-
-          local replacementEntities = remap(placeholderEntities, function(id, placeholderEntity)
-            local replacementEntity = unapprovedEntitiesByPosition[position_string(placeholderEntity.position)]
-            if replacementEntity then
-              replacementEntity.entity_number = placeholderEntity.entity_number
-              return id, replacementEntity
-            else
-              return id, nil
-            end
-          end)
-
-          -- Fix up the circuit connections
-          -- game.print("Fixing up circuit connections on " .. tostring(#replacementEntities) .. " replacement entities")
-          for id, replacementEntity in pairs(replacementEntities) do
-            if replacementEntity.connections then
-              for _, connection in pairs(replacementEntity.connections) do
-                for color, connectedEntityRefs in pairs(connection) do
-                  for _, connectedEntityRef in pairs(connectedEntityRefs) do
-                    local replacement_id = unapprovedEntities[connectedEntityRef.entity_id].entity_number
-                    connectedEntityRef.entity_id = replacement_id
-                  end
-                end
-              end
-            end
-          end
-
-          -- Apply the replacement entities
-          for id, replacementEntity in pairs(replacementEntities) do
-            blueprintEntities[id] = replacementEntity
-          end
-
-          -- Uncomment for debugging only
-          -- game.print("Blueprint updated to replace placeholders")
-          -- for id, blueprintEntity in pairs(blueprintEntities) do
-          --   game.print("blueprintEntities[" .. id .. "] = " .. serpent.line(blueprintEntity))
-          -- end
-
-          blueprint.clear_blueprint()
-          blueprint.set_blueprint_entities(blueprintEntities)
+      local filteredBlueprintEntities = filter(
+        blueprintEntities,
+        function(id, blueprintEntity)
+          return not is_bp_placeholder(blueprintEntity)
         end
+      )
+
+      if blueprintEntities and table_size(blueprintEntities) ~= table_size(filteredBlueprintEntities) then
+          blueprint.clear_blueprint()
+          blueprint.set_blueprint_entities(filteredBlueprintEntities)
       end
     end
 
