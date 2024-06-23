@@ -16,12 +16,18 @@ local constructionPlanner = {
     flags = {"hidden", "not-stackable", "spawnable", "only-in-cursor"},
     subgroup = "other",
     stack_size = 1,
+
     selection_color = {71, 255, 73}, -- copied from upgrade-planner
-    selection_cursor_box_type = "copy", -- copied from upgrade-planner
-    selection_mode = {"nothing"},
+    selection_cursor_box_type = "not-allowed", -- copied from upgrade-planner
+    selection_mode = {"entity-ghost", "not-same-force", "friend"},
+    entity_filter_mode = "blacklist",
+    entity_filters = {"unapproved-ghost-placeholder"},
+
     alt_selection_color = {239, 153, 34}, -- copied from upgrade-planner
-    alt_selection_cursor_box_type = "copy", -- copied from upgrade-planner
-    alt_selection_mode = {"nothing"},
+    alt_selection_cursor_box_type = "not-allowed", -- copied from upgrade-planner
+    alt_selection_mode = {"entity-ghost", "same-force"},
+    alt_entity_filter_mode = "blacklist",
+    alt_entity_filters = {"unapproved-ghost-placeholder"},
 
     -- Note: the below *mostly* works for approval selection.  The problem is that I really need to be able to apply
     -- filters that differentiate between ghosts and non-ghosts, and there doesn't seem to be any good way to do that.

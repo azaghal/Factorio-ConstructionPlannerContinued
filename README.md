@@ -37,15 +37,16 @@ Known issues
 ------------
 
 -   Upgrade planner cannot be used against unapproved ghosts.
--   Selection boxes around unapproved ghosts do not match underlying ghost entity size.
--   Unapproved ghosts selected with any cut/copy/blueprint/deconstruct tool show-up as "placeholder" ghosts (check-marks).
+-   Unapproved ghosts selected with any cut/copy/blueprint/deconstruct tool also show up as "placeholder" ghosts (check-marks).
 -   Undoing deletion with combination of approved and unapproved ghosts results in two separate undo steps.
 -   Construction bots already en route to approved ghosts will not turn around until they reach the build site. However, no unapproved entities will be built. Compare this to deconstruction of a ghost, when the bots do turn around immediatelly.
 -   Approving/unapproving itself cannot be undone. When ghost entities get approved, and personal robots construct them, undoing will _not_ cause those newly built entities to be marked for deconstruction. Approve/unapprove actions themselves are not put into the undo queue. Be careful not to accidentally undo some unrelated part of the base in this manner.
--   Unapproved ghosts cannot be used for correctly replacing content of an existing blueprint. This is limitation on the game's modding API.
+-   Updating blueprints using unapproved ghosts will also include the placeholder ghosts in the blueprint. They can be manually removed from the blueprint without any repercussions.
 -   Deconstruction planners from blueprint library have no effect on unapproved ghost entities. This is limtiation on the game's modding API.
 -   Underground belt rotation can get messed-up when approving/unapproving ghost entities. Due to how game engine handles underground belt orientation (preventing inconsistencies for belts of the same force), it is not possible to fix this via mod.
 -   Underground belt rotation might not always rotate the most obvious underground belt.
+-   Belts are not rotated correctly when drag-placing in unapproved-by-default mode.
+-   Underground belts are not placed when drag-placing in unapproved-by-default mode.
 
 
 Roadmap
@@ -58,7 +59,7 @@ Roadmap
 -   Upgrade planner support for unapproved ghosts.
 -   Improved graphics and icons.
 -   In-game tips-and-tricks demonstration and documentation.
--   Show correct selection boxes around unapproved ghosts when using blueprint and deconstruction tools.
+-   Show correct selection boxes around unapproved ghosts when using deconstruction tools.
 -   Support for force merging (merging unapproved ghosts forces in addition to merging of base forces).
 -   Efficient means for force identification (if the regex is too slow).
 -   Use on\_entity\_changed_force event handler for approval status badge updates if Wube Software ever implementes it.
