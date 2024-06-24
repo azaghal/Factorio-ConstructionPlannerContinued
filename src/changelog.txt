@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
     - Construction planner tool highlights and counts affected (unapproved) ghosts instead of placeholder ghosts. Works with both approval and unapproval.
     - Construction planner tool highlights affected ghosts using red outline (similar to what other vanilla planners do) instead of green.
+    - Base game version requirement bumped to 1.1.86.
   Features:
   Bugfixes:
     - Fixed entity duplication when blueprinting unapproved ghosts (due to changes introduced in Factorio 1.1.86).
