@@ -2,7 +2,7 @@
 #
 # factorio_development.sh
 #
-# Copyright (C) 2022, Branko Majic <branko@majic.rs>
+# Copyright (C) 2023, Branko Majic <branko@majic.rs>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 set -u
 
 PROGRAM="factorio_development.sh"
-VERSION="1.1.0"
+VERSION="2.0.0"
 
 function usage() {
     cat <<EOF
@@ -737,7 +737,7 @@ function command_build() {
             error "Validation failed for file: $mod_file"
         fi
 
-        if [[ $mod_file_path =~ .*\.json ]] && ! python -m json.tool "$mod_file_path" > /dev/null; then
+        if [[ $mod_file_path =~ .*\.json ]] && ! python3 -m json.tool "$mod_file_path" > /dev/null; then
             (( error_count += 1 ))
             error "Validation failed for file: $mod_file"
         fi
@@ -896,8 +896,10 @@ function command_release() {
         return 1
     fi
 
-    # Switch back to development version.
-    sed -i -e "s/$version/999.999.999/" "$info_file"
+    # Switch back to development version. Include double quotes in
+    # order to avoid accidental replacement of version strings in
+    # dependencies.
+    sed -i -e "s/\"$version\"/\"999.999.999\"/" "$info_file"
     changelog=$(cat <<EOF
 ---------------------------------------------------------------------------------------------------
 Version: 999.999.999
