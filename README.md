@@ -47,6 +47,7 @@ Known issues
 -   Underground belt rotation might not always rotate the most obvious underground belt.
 -   Belts are not rotated correctly when drag-placing in unapproved-by-default mode.
 -   Underground belts are not placed when drag-placing in unapproved-by-default mode.
+-   Requester chest option *Request from buffer chests* is not set correctly when unapproved ghosts get revived by mods (such as *Creative Mod*).
 
 
 Roadmap

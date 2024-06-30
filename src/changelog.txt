@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Workaround for "Request from buffer chests" option not getting preserved during approvals/unapprovals (vanilla bug/behaviour).
 ---------------------------------------------------------------------------------------------------
 Version: 3.0.0
 Date: 2024-06-24
