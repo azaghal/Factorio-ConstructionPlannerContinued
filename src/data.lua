@@ -13,21 +13,30 @@ local constructionPlanner = {
         {icon = "__base__/graphics/icons/upgrade-planner.png", icon_size = 64, icon_mipmaps = 4},
         {icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75},
     },
-    flags = {"hidden", "not-stackable", "spawnable", "only-in-cursor"},
+    hidden = true,
+    flags = {"not-stackable", "spawnable", "only-in-cursor"},
     subgroup = "other",
     stack_size = 1,
 
-    selection_color = {71, 255, 73}, -- copied from upgrade-planner
-    selection_cursor_box_type = "not-allowed", -- copied from upgrade-planner
-    selection_mode = {"entity-ghost", "not-same-force", "friend"},
-    entity_filter_mode = "blacklist",
-    entity_filters = {"unapproved-ghost-placeholder"},
+    select = {
+        border_color = {71, 255, 73}, -- copied from upgrade-planner
+        cursor_box_type = "not-allowed", -- copied from upgrade-planner
+        mode = {"entity-ghost", "not-same-force", "friend"},
+        entity_filter_mode = "blacklist",
+        entity_filters = {"unapproved-ghost-placeholder"},
+        started_sound = { filename = "__core__/sound/upgrade-select-start.ogg" },
+        ended_sound = { filename = "__core__/sound/upgrade-select-end.ogg" },
+    },
 
-    alt_selection_color = {239, 153, 34}, -- copied from upgrade-planner
-    alt_selection_cursor_box_type = "not-allowed", -- copied from upgrade-planner
-    alt_selection_mode = {"entity-ghost", "same-force"},
-    alt_entity_filter_mode = "blacklist",
-    alt_entity_filters = {"unapproved-ghost-placeholder"},
+    alt_select = {
+        border_color = {239, 153, 34}, -- copied from upgrade-planner
+        cursor_box_type = "not-allowed", -- copied from upgrade-planner
+        mode = {"entity-ghost", "same-force"},
+        entity_filter_mode = "blacklist",
+        entity_filters = {"unapproved-ghost-placeholder"},
+        started_sound = { filename = "__core__/sound/upgrade-cancel-start.ogg" },
+        ended_sound = { filename = "__core__/sound/upgrade-cancel-end.ogg" },
+    },
 
     -- Note: the below *mostly* works for approval selection.  The problem is that I really need to be able to apply
     -- filters that differentiate between ghosts and non-ghosts, and there doesn't seem to be any good way to do that.
@@ -67,30 +76,12 @@ local giveConstructionPlannerShortcut = {
     --       not too likely to matter...most players will have unlocked BP tech well before exploring mods
     -- technology_to_unlock = "construction-robotics",
     style = "green",
-    icon = {
-        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x32-white.png",
-        priority = "extra-high-no-scale",
-        size = 32,
-        scale = 0.5,
-        mipmap_count = 2,
-        flags = {"gui-icon"}
-    },
-    small_icon = {
-        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
-        priority = "extra-high-no-scale",
-        size = 24,
-        scale = 0.5,
-        mipmap_count = 2,
-        flags = {"gui-icon"}
-    },
-    disabled_small_icon = {
-        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
-        priority = "extra-high-no-scale",
-        size = 24,
-        scale = 0.5,
-        mipmap_count = 2,
-        flags = {"gui-icon"}
-    }
+
+    icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x32-white.png",
+    icon_size = 32,
+
+    small_icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/new-construction-planner-x24-white.png",
+    small_icon_size = 24,
 }
 
 local toggleAutoApproveInput = {
@@ -117,30 +108,12 @@ local toggleAutoApproveShortcut = {
     -- technology_to_unlock = "construction-robotics",
     style = "default",
     toggleable = true,
-    icon = {
-        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x32.png",
-        priority = "extra-high-no-scale",
-        size = 32,
-        scale = 0.5,
-        mipmap_count = 2,
-        flags = {"gui-icon"}
-    },
-    small_icon = {
-        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24.png",
-        priority = "extra-high-no-scale",
-        size = 24,
-        scale = 0.5,
-        mipmap_count = 2,
-        flags = {"gui-icon"}
-    },
-    disabled_small_icon = {
-        filename = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24-white.png",
-        priority = "extra-high-no-scale",
-        size = 24,
-        scale = 0.5,
-        mipmap_count = 2,
-        flags = {"gui-icon"}
-    }
+
+    icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x32.png",
+    icon_size = 32,
+
+    small_icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/auto-approve-x24.png",
+    small_icon_size = 24,
 }
 
 -- Note: this item group and subgroup help to organize the placeholder icon in the editor 'all entities' list
@@ -160,7 +133,8 @@ unapproved_item_subgroup.group = "unapproved-entities"
 local unapproved_ghost_placeholder = {
     type = "simple-entity-with-owner",
     name = "unapproved-ghost-placeholder",
-    flags = {"placeable-off-grid", "player-creation", "not-on-map", "hidden", "hide-alt-info", "not-flammable", "not-selectable-in-game", "not-in-kill-statistics"},
+    hidden = true,
+    flags = {"placeable-off-grid", "player-creation", "not-on-map", "hide-alt-info", "not-flammable", "not-selectable-in-game", "not-in-kill-statistics"},
     -- selection_box = {{-0.5, -0.5}, {0.5, 0.5}}, -- DO NOT ENABLE
     icons = {
         {icon = "__ConstructionPlannerContinued__/graphics/icons/shortcut-toolbar/mip/construction-planner-x32-white.png", icon_size = 32, scale = 0.75}

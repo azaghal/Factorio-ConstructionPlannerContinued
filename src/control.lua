@@ -248,13 +248,13 @@ end
 -- @return LuaItemStack Blueprint.
 --
 function get_script_blueprint()
-  if not global.blueprintInventory then
+  if not storage.blueprintInventory then
     local blueprintInventory = game.create_inventory(1)
     blueprintInventory.insert({ name="blueprint"})
-    global.blueprintInventory = blueprintInventory
+    storage.blueprintInventory = blueprintInventory
   end
 
-  return global.blueprintInventory[1]
+  return storage.blueprintInventory[1]
 end
 
 
@@ -263,19 +263,19 @@ end
 -- @return LuaItemStack Deconstruction planner.
 --
 function get_deconstruction_planner()
-  if not global.deconstruction_planner_inventory then
-    global.deconstruction_planner_inventory = game.create_inventory(1)
-    global.deconstruction_planner_inventory.insert({ name = "deconstruction-planner" })
+  if not storage.deconstruction_planner_inventory then
+    storage.deconstruction_planner_inventory = game.create_inventory(1)
+    storage.deconstruction_planner_inventory.insert({ name = "deconstruction-planner" })
 
     -- Make sure that the deconstruction planner cannot be used for deconstructing trees and rocks. Deconstruction
     -- planner is used as a helper tool to preserve correct undo history. However, when used with cut-and-paste, we need
     -- to make sure that the trees and rocks are not affected by it - since normal cut-and-paste tool does not touch
     -- those either.
-    global.deconstruction_planner_inventory[1].entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
-    global.deconstruction_planner_inventory[1].trees_and_rocks_only = true
+    storage.deconstruction_planner_inventory[1].entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
+    storage.deconstruction_planner_inventory[1].trees_and_rocks_only = true
   end
 
-  return global.deconstruction_planner_inventory[1]
+  return storage.deconstruction_planner_inventory[1]
 end
 
 
@@ -477,7 +477,8 @@ function is_approvable_ghost(entity)
 
   function is_perishable(entity)
     -- In theory, entity.time_to_live <= entity.force.ghost_time_to_live would also work..but this seems safer
-    return entity.time_to_live < UINT32_MAX
+    --return entity.time_to_live < UINT32_MAX
+    return false
   end
 
   function is_selectable(entity)
@@ -516,8 +517,8 @@ function approve_entities(entities)
         remove_placeholder_for(entity)
       end
 
-      local badgeId = approvalBadges.getOrCreate(entity);
-      approvalBadges.showApproved(badgeId)
+      local badge = approvalBadges.getOrCreate(entity);
+      approvalBadges.showApproved(badge)
     end
   end
 
@@ -688,8 +689,8 @@ function unapprove_entities(entities)
       end
 
       create_placeholder_for(entity)
-      local badgeId = approvalBadges.getOrCreate(entity);
-      approvalBadges.showUnapproved(badgeId)
+      local badge = approvalBadges.getOrCreate(entity);
+      approvalBadges.showUnapproved(badge)
     end
   end
 end
@@ -712,17 +713,17 @@ end
 -- (if they did not get replaced by an actual draggable entity).
 --
 function process_unapproved_ghosts_correction_queue()
-  if global.unapproved_ghosts_correction_queue then
+  if storage.unapproved_ghosts_correction_queue then
     -- Ghosts that are still valid have obvisouly not been replaced, so they should be switched back to their original
     -- (unapproved) state.
-    for unit_number, ghost in pairs(global.unapproved_ghosts_correction_queue) do
+    for unit_number, ghost in pairs(storage.unapproved_ghosts_correction_queue) do
       if ghost.valid then
         unapprove_entities({ghost})
       end
     end
 
     -- Mark the queue as processed.
-    global.unapproved_ghosts_correction_queue = nil
+    storage.unapproved_ghosts_correction_queue = nil
 
     -- The queue has been processed, deregister handler to avoid performance issues.
     script.on_event(defines.events.on_tick, nil)
@@ -827,9 +828,7 @@ script.on_event(defines.events.on_player_selected_area,
   function(event)
     if event.item == 'construction-planner' then
       local player = game.get_player(event.player_index)
-      if table_size(approve_entities_in_area(player.force, event.surface, event.area)) > 0 then
-        player.play_sound { path = "utility/upgrade_selection_ended" }
-      end
+      approve_entities_in_area(player.force, event.surface, event.area)
     end
   end
 )
@@ -851,9 +850,6 @@ script.on_event(defines.events.on_player_alt_selected_area,
           -- game.print("construction-planner: unapproving "..tostring(#entities).." entities")
 
           unapprove_entities(entities)
-
-          -- Note:  if the devs ever add support, I can also use "utility/upgrade_selection_started" at selection start
-          player.play_sound { path = "utility/upgrade_selection_ended" }
         end
     end
   end
@@ -863,11 +859,10 @@ script.on_event(defines.events.on_player_alt_selected_area,
 script.on_event(defines.events.on_built_entity,
   function(event)
 
-    local entity = event.created_entity
+    local entity = event.entity
     local player = game.players[event.player_index]
 
     if entity.type == "entity-ghost" then
-
       if entity.ghost_name == "unapproved-ghost-placeholder" then
         -- Player should not be able to place unapproved ghost placeholders. This can happen when invoking the undo
         -- action. Get rid of the placeholder at this point. As an interesting side-effect, this also makes the undo
@@ -939,11 +934,11 @@ script.on_event(defines.events.on_player_setup_blueprint,
       --   - age, assuming that related on_pre_ghost_deconstructed will get executed in the same tick.
       --   - area, that can be used for deconstructing all unapproved ghost entities.
       --   - surface, for completeness sake when doing condition checks in on_pre_ghost_deconstructed.
-      global.player_setup_blueprint = global.player_setup_blueprint or {}
-      global.player_setup_blueprint[player.index] = global.player_setup_blueprint[player.index] or {}
-      global.player_setup_blueprint[player.index].age = event.tick
-      global.player_setup_blueprint[player.index].area = event.area
-      global.player_setup_blueprint[player.index].surface = event.surface
+      storage.player_setup_blueprint = storage.player_setup_blueprint or {}
+      storage.player_setup_blueprint[player.index] = storage.player_setup_blueprint[player.index] or {}
+      storage.player_setup_blueprint[player.index].age = event.tick
+      storage.player_setup_blueprint[player.index].area = event.area
+      storage.player_setup_blueprint[player.index].surface = event.surface
     end
   end
 )
@@ -999,13 +994,13 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
       --    first place by the cut-paste-tool anyway).
       --
       elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "cut-paste-tool" and
-             global.player_setup_blueprint[player.index].age == event.tick and
-             global.player_setup_blueprint[player.index].surface == entity.surface then
+             storage.player_setup_blueprint[player.index].age == event.tick and
+             storage.player_setup_blueprint[player.index].surface == entity.surface then
 
         local deconstruction_planner = get_deconstruction_planner()
         local surface = entity.surface
 
-        deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, global.player_setup_blueprint[player.index].area)
+        deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, storage.player_setup_blueprint[player.index].area)
 
       -- Script triggered the removal, and assigned it to player. Destroy placeholder entity directly (to prevent it
       -- from reaching player's undo queue), and destroy the unapproved ghost entity through deconstruction planner (to
@@ -1115,9 +1110,9 @@ script.on_event(defines.events.on_pre_build,
         -- ending-up with bogus placeholders. See documentation for process_unapproved_ghosts_correction_queue function
         -- for more details.
         if event.created_by_moving and place_type == "underground-belt" or place_type == "electric-pole" or place_type == "pipe-to-ground" then
-          global.unapproved_ghosts_correction_queue = global.unapproved_ghosts_correction_queue or {}
+          storage.unapproved_ghosts_correction_queue = storage.unapproved_ghosts_correction_queue or {}
           for _, ghost in pairs(unapproved_ghosts) do
-            global.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
+            storage.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
           end
 
           -- Ensure that the correction queue gets processed during next game tick.
@@ -1422,17 +1417,17 @@ function command_cp_cleanup(command)
   local player = game.players[command.player_index]
   local unapproved_ghost_force
 
-  global.commands = global.commands or {}
-  global.commands.cp_cleanup = global.commands.cp_cleanup or {}
+  storage.commands = storage.commands or {}
+  storage.commands.cp_cleanup = storage.commands.cp_cleanup or {}
 
-  if not global.commands.cp_cleanup.invoked_at or command.tick - global.commands.cp_cleanup.invoked_at > 600 then
-    global.commands.cp_cleanup.invoked_at = command.tick
+  if not storage.commands.cp_cleanup.invoked_at or command.tick - storage.commands.cp_cleanup.invoked_at > 600 then
+    storage.commands.cp_cleanup.invoked_at = command.tick
     player.print({"warning.cp-cleanup-command-confirm"})
     return
   end
 
   -- Reset the last invocation time.
-  global.commands.cp_cleanup.invoked_at = nil
+  storage.commands.cp_cleanup.invoked_at = nil
 
   game.print({"warning.cp-cleanup-command-started"})
 
@@ -1466,11 +1461,11 @@ commands.add_command(
 --     }
 --     game.print("construction-planner: scanning badges for  "..tostring(#ghostEntities).." ghost entities")
 --     for _, entity in pairs(ghostEntities) do
---       local badgeId = approvalBadges.getOrCreate(entity);
+--       local badge = approvalBadges.getOrCreate(entity);
 --       if is_unapproved_ghost_force(entity.force) then
---         approvalBadges.showUnapproved(badgeId)
+--         approvalBadges.showUnapproved(badge)
 --       else
---         approvalBadges.showApproved(badgeId)
+--         approvalBadges.showApproved(badge)
 --       end
 --     end
 --   end
