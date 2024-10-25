@@ -1270,34 +1270,29 @@ script.on_event(defines.events.on_player_deconstructed_area,
       return
     end
 
-    -- Only deconstruction planners from inventory are supported, since we cannot access _any_ information about
-    -- deconstruction planners that come from the library.
-    --
-    -- @TODO: Raise this up with Factorio developers and ask for feature to be able to read all the necessary
-    --        information about held deconstruction planner from the library.
     if player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
       deconstruct_unapproved_ghosts(player, player.cursor_stack, event.surface, event.area)
-    else
-      -- Fix missing placeholders in case the library deconstruction planner has destroyed them.
-      local unapproved_entities = event.surface.find_entities_filtered {
-        area = event.area,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        type = "entity-ghost"
-      }
+    elseif player.cursor_record and player.cursor_record.valid and player.cursor_record.type == "deconstruction-planner" then
+      -- @TODO: There is a bug in Factorio that seems to prevent player.cursor_record.deconstruct_area from working,
+      --        resort to cloning its settings instead. This code could be simplified if the devs address it. Bug report
+      --        on forums: https://forums.factorio.com/viewtopic.php?f=7&t=117411
+      local deconstruction_planner = get_deconstruction_planner()
 
-      for _, entity in pairs(unapproved_entities) do
-        if #get_placeholder_for(entity) == 0 then
-          create_placeholder_for(entity)
-        end
-      end
+      deconstruction_planner.clear_deconstruction_item()
+      deconstruction_planner.entity_filters = player.cursor_record.entity_filters
+      deconstruction_planner.tile_filters = player.cursor_record.tile_filters
+      deconstruction_planner.entity_filter_mode = player.cursor_record.entity_filter_mode
+      deconstruction_planner.tile_filter_mode = player.cursor_record.tile_filter_mode
+      deconstruction_planner.tile_selection_mode = player.cursor_record.tile_selection_mode
+      deconstruction_planner.trees_and_rocks_only = player.cursor_record.trees_and_rocks_only
 
-      -- Notify player about mod limitations if any unapproved entities were found in the requested area.
-      if #unapproved_entities > 0 then
-        player.create_local_flying_text {
-          text = {"warning.cp-library-deconstruction-planners-support"},
-          create_at_cursor = true,
-        }
-      end
+      deconstruct_unapproved_ghosts(player, deconstruction_planner, event.surface, event.area)
+
+      -- @TODO: Deconstruction planner is primarily used for cut-and-paste tool at this point, and that one expects
+      --        specific planner config.
+      deconstruction_planner.clear_deconstruction_item()
+      deconstruction_planner.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
+      deconstruction_planner.trees_and_rocks_only = true
     end
 
   end
