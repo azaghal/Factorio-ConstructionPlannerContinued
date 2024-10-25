@@ -764,6 +764,10 @@ function deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, 
     to_be_deconstructed = false,
   }
 
+  -- Assumes that previously stored item in the undo stack is the one with unapproved ghosts. This might be wrong in
+  -- cases where other mods are plugging in into the API that modifies the undo queue as well.
+  cleanup_undo_stack_item(player, 1)
+
   deconstruction_planner.deconstruct_area {
     surface = surface,
     force = player.force,
@@ -789,6 +793,31 @@ function deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, 
   end
 
   return false
+end
+
+
+--- Cleans unapproved ghost placeholders from undo stack item.
+--
+-- If the action is empty after the cleanup, it is removed from the player's undo stack altogether.
+--
+-- @param player LuaPlayer Player owning the undo/redo stack.
+-- @param item_index uint Undo stack item index.
+--
+function cleanup_undo_stack_item(player, item_index)
+  local stack = player.undo_redo_stack
+  local actions = stack.get_undo_item(item_index)
+
+  -- Must iterate in reverse order in order to keep the action indices stable.
+  for i = #actions, 1, -1 do
+    if actions[i].target.name == "unapproved-ghost-placeholder" then
+      stack.remove_undo_action(item_index, i)
+      actions[i] = nil
+    end
+  end
+
+  if #actions == 0 then
+    stack.remove_undo_item(item_index)
+  end
 end
 
 
