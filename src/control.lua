@@ -984,6 +984,10 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
     -- @TODO: The on_player_deconstructed_area event will not trigger if scripts invoke
     --        LuaEntity::order_deconstruction() or LuaSurface::deconstruct_area() functions. This needs to be handled in
     --        some way, although it may degrade user experience in terms of undo queue.
+    -- @TODO: Unfortunately, this bit of code is no longer helping with keeping the placeholders out of the undo
+    --        queue. Looks like the undo queue item gets populated prior to this event firing, so we end-up having to
+    --        clean up the queue items explicitly. A bunch of the undo queue handling needs to be refactored, but for
+    --        now this is kept in place to prevent things breaking.
 
     local player = event.player_index and game.players[event.player_index] or nil
     local entity = event.ghost

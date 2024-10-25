@@ -65,6 +65,8 @@ Roadmap
 -   Efficient means for force identification (if the regex is too slow).
 -   Use on\_entity\_changed_force event handler for approval status badge updates if Wube Software ever implementes it.
 -   Undo support for approve/unapprove actions.
+-   Preserve approval state when invoking undo.
+-   Merge approved and unapproved undo action into one when using deconstruction planner or cut-and-paste tool.
 
 
 How it works
