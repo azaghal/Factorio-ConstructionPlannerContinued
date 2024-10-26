@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed crash when running migrations for storing approval badges as objects.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.0
 Date: 2024-10-26
