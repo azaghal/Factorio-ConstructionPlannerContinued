@@ -8,6 +8,7 @@ Date: 9999-99-99
   Features:
     - Added support for game version 2.0.
   Bugfixes:
+    - Fix incorrect shortcut state when starting new game or when new players join the game.
 ---------------------------------------------------------------------------------------------------
 Version: 3.0.1
 Date: 2024-06-30

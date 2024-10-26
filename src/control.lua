@@ -1345,6 +1345,15 @@ script.on_event(defines.events.on_cancelled_deconstruction,
 )
 
 
+script.on_event(defines.events.on_player_joined_game,
+  function(event)
+    local player = game.players[event.player_index]
+
+    -- Make sure that the initial state of the shortcut is correct.
+    player.set_shortcut_toggled("toggle-auto-approve", is_auto_approval_enabled(player))
+  end
+)
+
 -------------------------------------------------------------------------------
 --       COMMANDS
 -------------------------------------------------------------------------------
