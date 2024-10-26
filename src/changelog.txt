@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
+Version: 4.0.0
+Date: 2024-10-26
   Changes:
     - Dropped support for game version 1.1.
     - Deconstruction planners from library are now fully supported for deconstructing unapproved ghosts.
