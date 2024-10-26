@@ -67,6 +67,7 @@ Roadmap
 -   Undo support for approve/unapprove actions.
 -   Preserve approval state when invoking undo.
 -   Merge approved and unapproved undo action into one when using deconstruction planner or cut-and-paste tool.
+-   Make checkmarks less obnoxious.
 
 
 How it works
