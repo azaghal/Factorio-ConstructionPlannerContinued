@@ -1035,6 +1035,17 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
 
         deconstruct_unapproved_ghosts(player, deconstruction_planner, surface, storage.player_setup_blueprint[player.index].area)
 
+        -- When invoking the cut-and-paste tool, it looks like the undo queue is not populated straight away, but only
+        -- at the very end of the action when the blueprint also gets put into player's hand. This is a minor workaround
+        -- that will take care of undo queue clean-up at that point (as a one-off).
+        -- @TODO: Check with game devs if this is intended behaviour or accidental.
+        script.on_event(defines.events.on_player_cursor_stack_changed,
+          function(event)
+            cleanup_undo_stack_item(player, 1)
+            script.on_event(defines.events.on_player_cursor_stack_changed, nil)
+          end
+        )
+
       -- Script triggered the removal, and assigned it to player. Destroy placeholder entity directly (to prevent it
       -- from reaching player's undo queue), and destroy the unapproved ghost entity through deconstruction planner (to
       -- place it in the undo queue).
