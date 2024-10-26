@@ -48,6 +48,7 @@ Known issues
 -   Belts are not rotated correctly when drag-placing in unapproved-by-default mode.
 -   Underground belts are not placed when drag-placing in unapproved-by-default mode.
 -   Requester chest option *Request from buffer chests* is not set correctly when unapproved ghosts get revived by mods (such as *Creative Mod*).
+-   Approval badges and unapproved ghost placeholders for elevated rails are not drawn/shown on top of the rails themselves.
 
 
 Roadmap
