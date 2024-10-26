@@ -475,17 +475,11 @@ end
 --
 function is_approvable_ghost(entity)
 
-  function is_perishable(entity)
-    -- In theory, entity.time_to_live <= entity.force.ghost_time_to_live would also work..but this seems safer
-    --return entity.time_to_live < UINT32_MAX
-    return false
-  end
-
   function is_selectable(entity)
     return entity.type == "entity-ghost" and entity.ghost_prototype.selectable_in_game
   end
 
-  return entity and entity.valid and entity.type == "entity-ghost" and not is_placeholder(entity) and not is_perishable(entity) and is_selectable(entity)
+  return entity and entity.valid and entity.type == "entity-ghost" and not is_placeholder(entity) and is_selectable(entity)
 end
 
 
