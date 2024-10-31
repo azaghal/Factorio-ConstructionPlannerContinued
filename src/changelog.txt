@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed missing recipes in machines for unapproved ghost force.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.1
 Date: 2024-10-27

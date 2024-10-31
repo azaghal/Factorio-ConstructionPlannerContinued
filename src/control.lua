@@ -61,6 +61,19 @@ function get_unapproved_ghost_force_name(force)
 end
 
 
+--- Returns unapproved ghost force.
+--
+-- Can be used against the unapproved ghost force itself as well.
+--
+-- @param force LuaForce Force for which to return the unapproved ghost force.
+--
+-- @return LuaForce Unapproved ghost force.
+--
+function get_unapproved_ghost_force(force)
+  return game.forces[get_unapproved_ghost_force_name(force)]
+end
+
+
 --- Returns base force name for specified force.
 --
 -- If passed-in name already belongs to a base force, returns the same name.
@@ -815,6 +828,20 @@ function cleanup_undo_stack_item(player, item_index)
 end
 
 
+--- Syncs research status of technology between the base and unapproved ghost forces.
+--
+-- @param technology LuaTechnology Technology to sync the researched status for.
+--
+function sync_technology(technology)
+  local base_force = get_base_force(technology.force)
+  local base_force_technology = base_force.technologies[technology.name]
+
+  local unapproved_ghost_force = get_unapproved_ghost_force(base_force)
+  local unapproved_ghost_force_technology = unapproved_ghost_force.technologies[technology.name]
+
+  unapproved_ghost_force_technology.researched = base_force_technology.researched
+end
+
 -------------------------------------------------------------------------------
 --       EVENTS
 -------------------------------------------------------------------------------
@@ -1351,6 +1378,42 @@ script.on_event(defines.events.on_player_joined_game,
 
     -- Make sure that the initial state of the shortcut is correct.
     player.set_shortcut_toggled("toggle-auto-approve", is_auto_approval_enabled(player))
+  end
+)
+
+
+-- Will trigger twice, once for base force, once for unapproved ghosts force, but should not enter a loop and will
+-- result in consistent state.
+script.on_event(defines.events.on_research_finished,
+  function(event)
+    local technology = event.research
+    sync_technology(technology)
+  end
+)
+
+
+-- Will trigger twice, once for base force, once for unapproved ghosts force, but should not enter a loop and will
+-- result in consistent state.
+script.on_event(defines.events.on_research_reversed,
+  function(event)
+    local technology = event.research
+    sync_technology(technology)
+  end
+)
+
+
+script.on_event(defines.events.on_force_reset,
+  function(event)
+    local force = event.force
+
+    if is_unapproved_ghost_force(force) then
+      return
+    end
+
+    local unapproved_ghost_force = get_unapproved_ghost_force(force)
+    unapproved_ghost_force.reset()
+    unapproved_ghost_force.set_friend(force, true)
+    sync_all_diplomacy(force, unapproved_ghost_force)
   end
 )
 
