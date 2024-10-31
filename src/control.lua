@@ -196,6 +196,17 @@ function sync_all_diplomacy(source_force, destination_force)
 end
 
 
+--- Synchronises all technology research status between the base and unapproved ghost forces.
+--
+-- @param force LuaForce Force to sync the technology research status for. Can be either the base force or unapproved ghosts force.
+--
+function sync_all_technology(force)
+  for _, technology in pairs(force.technologies) do
+    sync_technology(technology)
+  end
+end
+
+
 --- Retrieves unapproved ghost force for specified force, creating one if it does not exist.
 --
 -- @param force LuaForce Force for which to get unapproved ghost force.
@@ -216,6 +227,7 @@ function get_or_create_unapproved_ghost_force(force)
     force.set_cease_fire(unapproved_ghost_force, true)
 
     sync_all_diplomacy(force, unapproved_ghost_force)
+    sync_all_technology(force)
 
     FORCE_CREATION_IN_PROGRESS = false
   end
