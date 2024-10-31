@@ -196,6 +196,21 @@ function sync_all_diplomacy(source_force, destination_force)
 end
 
 
+--- Syncs research status of technology between the base and unapproved ghost forces.
+--
+-- @param technology LuaTechnology Technology to sync the researched status for.
+--
+function sync_technology(technology)
+  local base_force = get_base_force(technology.force)
+  local base_force_technology = base_force.technologies[technology.name]
+
+  local unapproved_ghost_force = get_unapproved_ghost_force(base_force)
+  local unapproved_ghost_force_technology = unapproved_ghost_force.technologies[technology.name]
+
+  unapproved_ghost_force_technology.researched = base_force_technology.researched
+end
+
+
 --- Synchronises all technology research status between the base and unapproved ghost forces.
 --
 -- @param force LuaForce Force to sync the technology research status for. Can be either the base force or unapproved ghosts force.
@@ -868,20 +883,6 @@ function cleanup_undo_stack_item(player, item_index)
   end
 end
 
-
---- Syncs research status of technology between the base and unapproved ghost forces.
---
--- @param technology LuaTechnology Technology to sync the researched status for.
---
-function sync_technology(technology)
-  local base_force = get_base_force(technology.force)
-  local base_force_technology = base_force.technologies[technology.name]
-
-  local unapproved_ghost_force = get_unapproved_ghost_force(base_force)
-  local unapproved_ghost_force_technology = unapproved_ghost_force.technologies[technology.name]
-
-  unapproved_ghost_force_technology.researched = base_force_technology.researched
-end
 
 -------------------------------------------------------------------------------
 --       EVENTS
