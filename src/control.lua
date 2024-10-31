@@ -207,6 +207,34 @@ function sync_all_technology(force)
 end
 
 
+--- Synchronises recipe status between the base and unapproved ghost forces.
+--
+-- @param recipe LuaRecipe Recipe to sync the status for.
+--
+function sync_recipe(recipe)
+  local base_force = get_base_force(recipe.force)
+  local base_force_recipe = base_force.recipes[recipe.name]
+
+  local unapproved_ghost_force = get_unapproved_ghost_force(base_force)
+  local unapproved_ghost_force_recipe = unapproved_ghost_force.recipes[recipe.name]
+
+  unapproved_ghost_force_recipe.enabled = base_force_recipe.enabled
+  unapproved_ghost_force_recipe.hidden_from_flow_stats = base_force_recipe.hidden_from_flow_stats
+  unapproved_ghost_force_recipe.productivity_bonusproductivity_bonus = base_force_recipe.productivity_bonus
+end
+
+
+--- Synchronises all recipes between the base and unapproved ghost forces.
+--
+-- @param force LuaForce Force to sync the recipes for. Can be either the base force or unapproved ghosts force.
+--
+function sync_all_recipes(force)
+  for _, recipe in pairs(force.recipes) do
+    sync_recipe(recipe)
+  end
+end
+
+
 --- Retrieves unapproved ghost force for specified force, creating one if it does not exist.
 --
 -- @param force LuaForce Force for which to get unapproved ghost force.
@@ -228,6 +256,7 @@ function get_or_create_unapproved_ghost_force(force)
 
     sync_all_diplomacy(force, unapproved_ghost_force)
     sync_all_technology(force)
+    sync_all_recipes(force)
 
     FORCE_CREATION_IN_PROGRESS = false
   end

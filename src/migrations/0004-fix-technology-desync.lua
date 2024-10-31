@@ -9,6 +9,7 @@ local function fix_technology_desync()
       local unapproved_ghost_force = game.forces[unapproved_ghost_force_name]
       if unapproved_ghost_force then
         sync_all_technology(force)
+        sync_all_recipes(force)
       end
     end
   end
