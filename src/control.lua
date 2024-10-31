@@ -1453,9 +1453,11 @@ script.on_event(defines.events.on_force_reset,
     end
 
     local unapproved_ghost_force = get_unapproved_ghost_force(force)
-    unapproved_ghost_force.reset()
-    unapproved_ghost_force.set_friend(force, true)
-    sync_all_diplomacy(force, unapproved_ghost_force)
+    if unapproved_ghost_force then
+      unapproved_ghost_force.reset()
+      unapproved_ghost_force.set_friend(force, true)
+      sync_all_diplomacy(force, unapproved_ghost_force)
+    end
   end
 )
 
