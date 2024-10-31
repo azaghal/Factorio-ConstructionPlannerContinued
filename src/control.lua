@@ -235,7 +235,7 @@ function sync_recipe(recipe)
 
   unapproved_ghost_force_recipe.enabled = base_force_recipe.enabled
   unapproved_ghost_force_recipe.hidden_from_flow_stats = base_force_recipe.hidden_from_flow_stats
-  unapproved_ghost_force_recipe.productivity_bonusproductivity_bonus = base_force_recipe.productivity_bonus
+  unapproved_ghost_force_recipe.productivity_bonus = base_force_recipe.productivity_bonus
 end
 
 
