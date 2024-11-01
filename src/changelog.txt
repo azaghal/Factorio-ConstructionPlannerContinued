@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed crash when modifying undo stack that contains actions without direct target (like adding wire or building a tile).
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.3
 Date: 2024-11-01

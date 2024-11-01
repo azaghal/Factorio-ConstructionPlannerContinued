@@ -877,7 +877,7 @@ function cleanup_undo_stack_item(player, item_index)
 
   -- Must iterate in reverse order in order to keep the action indices stable.
   for i = #actions, 1, -1 do
-    if actions[i].target.name == "unapproved-ghost-placeholder" then
+    if actions[i].target and actions[i].target.name == "unapproved-ghost-placeholder" then
       stack.remove_undo_action(item_index, i)
       actions[i] = nil
     end
