@@ -30,7 +30,7 @@ Date: 2024-10-26
   Features:
     - Added support for game version 2.0.
   Bugfixes:
-    - Fix incorrect shortcut state when starting new game or when new players join the game.
+    - Fixed incorrect shortcut state when starting new game or when new players join the game.
 ---------------------------------------------------------------------------------------------------
 Version: 3.0.1
 Date: 2024-06-30
