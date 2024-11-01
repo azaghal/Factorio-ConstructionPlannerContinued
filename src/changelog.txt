@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed tiles getting removed from created/updated blueprints when using unapproved ghosts.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.4
 Date: 2024-11-01

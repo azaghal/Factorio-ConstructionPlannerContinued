@@ -999,13 +999,13 @@ script.on_event(defines.events.on_built_entity,
 
 script.on_event(defines.events.on_player_setup_blueprint,
   function(event)
-    -- Note: this event fires not just for blueprints, but for copy operations as well
-    -- game.print("construction-planner: on_player_setup_blueprint, event=" .. serpent.block(event));
+    -- NOTE: This event fires for a number of different operations (not just blueprint creation), like copy or cut.
 
     local player = game.players[event.player_index]
+    local blueprint = event.stack
 
-    -- Remove placeholder entities.
-    local adjust_blueprint = function(blueprint)
+    -- Drop the placeholder entities from the blueprint.
+    if blueprint and blueprint.valid then
       local blueprintEntities = blueprint.get_blueprint_entities()
       local filteredBlueprintEntities = filter(
         blueprintEntities,
@@ -1015,28 +1015,25 @@ script.on_event(defines.events.on_player_setup_blueprint,
       )
 
       if blueprintEntities and table_size(blueprintEntities) ~= table_size(filteredBlueprintEntities) then
-          blueprint.clear_blueprint()
           blueprint.set_blueprint_entities(filteredBlueprintEntities)
       end
+
     end
 
-    -- Cover both creation of blueprint (first condition), and use of cut/copy/paste tools (cursor check).
-    if (player.blueprint_to_setup.valid_for_read) then
-      adjust_blueprint(player.blueprint_to_setup)
-    elseif (player.is_cursor_blueprint()) then
-      adjust_blueprint(player.cursor_stack)
-
-      -- Player may have set-up the blueprint by invoking the cut-paste-tool. Store:
-      --
-      --   - age, assuming that related on_pre_ghost_deconstructed will get executed in the same tick.
-      --   - area, that can be used for deconstructing all unapproved ghost entities.
-      --   - surface, for completeness sake when doing condition checks in on_pre_ghost_deconstructed.
+    -- If action resulted in player holding a blueprint, store additional information to account for use of
+    -- cut-and-paste tool:
+    --
+    --   - age, assuming that related on_pre_ghost_deconstructed will get executed in the same tick.
+    --   - area, that can be used for deconstructing all unapproved ghost entities.
+    --   - surface, for completeness sake when doing condition checks in on_pre_ghost_deconstructed.
+    if (player.is_cursor_blueprint()) then
       storage.player_setup_blueprint = storage.player_setup_blueprint or {}
       storage.player_setup_blueprint[player.index] = storage.player_setup_blueprint[player.index] or {}
       storage.player_setup_blueprint[player.index].age = event.tick
       storage.player_setup_blueprint[player.index].area = event.area
       storage.player_setup_blueprint[player.index].surface = event.surface
     end
+
   end
 )
 
