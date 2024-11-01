@@ -202,9 +202,14 @@ end
 --
 function sync_technology(technology)
   local base_force = get_base_force(technology.force)
-  local base_force_technology = base_force.technologies[technology.name]
-
   local unapproved_ghost_force = get_unapproved_ghost_force(base_force)
+
+  -- Unapproved ghost force has not been created yet (no unapproved ghosts were placed by the base force).
+  if not unapproved_ghost_force then
+    return
+  end
+
+  local base_force_technology = base_force.technologies[technology.name]
   local unapproved_ghost_force_technology = unapproved_ghost_force.technologies[technology.name]
 
   unapproved_ghost_force_technology.researched = base_force_technology.researched

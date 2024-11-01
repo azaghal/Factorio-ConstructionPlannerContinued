@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed crash when technology is researched with a force that has not created any unapproved ghosts yet.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.2
 Date: 2024-10-31
