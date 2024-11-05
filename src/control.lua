@@ -1272,9 +1272,9 @@ script.on_event(defines.events.on_pre_build,
     -- Handle blueprint builds.
     if #blueprint_entities > 0 then
 
-      -- Calculate bounding box to use for selecting the unapproved ghosts. It needs to match blueprint position on the
-      -- map. First we calculate the blueprint height and width, then we translate that around the event position. The
-      -- final bounding box might be slightly larger in certain directions due to even vs uneven blueprint height/width.
+      -- Calculate selection area to use for selecting the unapproved ghosts. It needs to match blueprint position on the
+      -- map. First we calculate the blueprint height and width, then we translate that around the event position as a
+      -- center. The area will be rounded-up to encompass partial tiles.
       local left_top = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
       local right_bottom = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
 
@@ -1286,17 +1286,37 @@ script.on_event(defines.events.on_pre_build,
         right_bottom.y = math.max(blueprint_entity.position.y + box.right_bottom.y, right_bottom.y)
       end
 
-      local width = right_bottom.x - left_top.x
-      local height = right_bottom.y - left_top.y
+      local width = math.ceil(right_bottom.x - left_top.x)
+      local height = math.ceil(right_bottom.y - left_top.y)
 
-      left_top.x = math.floor(event.position.x - width / 2)
-      left_top.y = math.floor(event.position.y - height / 2)
-      right_bottom.x = math.ceil(event.position.x + width / 2)
-      right_bottom.y = math.ceil(event.position.y + height / 2)
+      -- Swap the height/width if the blueprint has been rotated by 90 degrees.
+      if event.direction == defines.direction.east or event.direction == defines.direction.west then
+        width, height = height, width
+      end
 
-      local area = { left_top, right_bottom }
+      -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
+      -- very center of a tile or between two tiles.
+      local center = {}
+      if width % 2 == 0 then
+        center.x = event.position.x >= 0 and math.floor(event.position.x + 0.5) or math.ceil(event.position.x - 0.5)
+      else
+        center.x = math.floor(event.position.x) + 0.5
+      end
+
+      if height % 2 == 0 then
+        center.y = event.position.y >= 0 and math.floor(event.position.y + 0.5) or math.ceil(event.position.y - 0.5)
+      else
+        center.y = math.floor(event.position.y) + 0.5
+      end
+
+      -- Offset the corners based on width/height, and make sure to encircle entire tiles (just in case).
+      left_top.x = math.floor(center.x - width / 2)
+      left_top.y = math.floor(center.y - height / 2)
+      right_bottom.x = math.ceil(center.x + width / 2)
+      right_bottom.y = math.ceil(center.y + height / 2)
+
       local unapproved_ghosts = player.surface.find_entities_filtered {
-        area = area,
+        area = {left_top, right_bottom},
         force = get_or_create_unapproved_ghost_force(player.force),
         name = "entity-ghost"
       }
