@@ -1171,17 +1171,41 @@ script.on_event(defines.events.on_player_mined_entity,
 
 script.on_event(defines.events.on_pre_build,
   function(event)
-    -- If the player is about to build an entity in the same exact position as an unapproved ghost, approve the ghost
-    -- before the build happens.  This restores the ghost to the main force so that any special logic like recipe
-    -- preservation will be handled properly when the entity gets built.
+    -- When player is about to build an entity, approve all overlapping unapproved ghosts before that happens. This way
+    -- a number of core game mechanics will kick-in correctly:
+    --
+    --   - (Now approved) unapproved ghosts will get removed and replaced by entity built on top, or by new enetity
+    --     ghosts built using super-forced build.
+    --   - The (now approved) unapproved ghosts that are removed by the above will become part of the undo queue.
+    --   - Entities built right on top of matching (now approved) unapproved ghosts will inherit the unapproved ghost
+    --     configuration (recipes, logic circuit configurations etc).
+    --
+    -- There are also some peculiar behaviours that need to be taken into account within this event handler:
+    --
+    --   - When placing new ghosts via dragging, the event will trigger on every single tile the cursor moves over, even
+    --     though nothing will get subsequently built on top of that tile (no on_built_entity gets triggered). This
+    --     complicates the decison-making process on what unapproved ghosts to apporove.
+    --   - Some selection tools (like Tapeline - https://mods.factorio.com/mod/Tapeline) place down new entities as they
+    --     are being dragged. These events may also need to be ignored if the placed entity is some kind of temporary
+    --     entity, or if it doesn't interact with the underlying entity in any meaningful manner.
+    --
 
     local player = game.players[event.player_index]
-    local cursor_stack = player.cursor_stack
 
-    -- Do not approve the ghost if player is in process of placing ghosts. This will also deal with "fake" approvals
-    -- when player is quickly dragging with a ghost entity (basically the on_pre_build will get triggered while still on
-    -- top of the ghost placed in previous step, and approve it by mistake).
-    if event.shift_build or cursor_stack and (cursor_stack.is_blueprint or cursor_stack.is_blueprint_book or not cursor_stack.valid_for_read) then
+    -- Different cursors need to be accessed depending on what the player is holding.
+    local cursor_stack = player.cursor_stack   -- regular item (quantity > 0) or inventory blueprint
+    local cursor_ghost = player.cursor_ghost   -- ghost item (quantity = 0)
+    local cursor_record = player.cursor_record -- library blueprint
+
+    -- Bail-out early if there is nothing that needs to be done - underlying ghosts would not get affected in the
+    -- vanilla game mechanics. Sole exception would be building upgraded/downgraded version of ghost entity on top of
+    -- existing ghost entity. However, since placeholder ghost entities will conflict with this scenario, we can ignore
+    -- even that one.
+    if   event.build_mode == defines.build_mode.forced
+      or event.build_mode == defines.build_mode.normal and cursor_ghost
+      or event.build_mode == defines.build_mode.normal and cursor_stack.is_blueprint
+      or event.build_mode == defines.build_mode.normal and cursor_record and cursor_record.type == "blueprint"
+    then
       return
     end
 
@@ -1189,19 +1213,22 @@ script.on_event(defines.events.on_pre_build,
     -- entities with a selection tool, make sure to validate that the selection tool places entities that are selectable
     -- before approving the underlying unapproved ghosts. Tapeline is an example of a mod that behaves in this manner.
     -- Unfortunately, it does not seem possible to more closely detect what entity would get placed during this event.
-    if cursor_stack and cursor_stack.is_selection_tool and
-      cursor_stack.prototype.place_result and not cursor_stack.prototype.place_result.selectable_in_game then
+    if cursor_stack.is_selection_tool and cursor_stack.prototype.place_result and not cursor_stack.prototype.place_result.selectable_in_game then
       return
     end
 
-    -- When dragging with "gappable" item stacks, they produce the on_pre_build event on every tile passed-over without
-    -- actually building any entity. Detect use of such items and prevent ghost approval for them.
-    -- @TODO: Check on modding forum if this is an actual bug in modding API or not.
-    if cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype and cursor_stack.prototype.place_result then
-      local place_type = cursor_stack.prototype.place_result.type
+    -- Grab the prototype of individual entity being built.
+    local place_result =
+         cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype and cursor_stack.prototype.place_result
+      or cursor_ghost and cursor_ghost.name and cursor_ghost.name.place_result
+      or cursor_stack.valid_for_read and cursor_stack.prototype and cursor_stack.prototype.place_result
+      or nil
 
-      -- Use selection box of the item that the user is currently holding to find overlap with unapproved ghost entities.
-      local box = cursor_stack.prototype.place_result.selection_box
+    -- Handle individual entity builds where we can figure out place result.
+    if place_result then
+
+      -- Find overlapping unapproved ghosts.
+      local box = place_result.selection_box
       local area = {
           { event.position.x + box.left_top.x, event.position.y + box.left_top.y },
           { event.position.x + box.right_bottom.x, event.position.y + box.right_bottom.y },
@@ -1212,13 +1239,13 @@ script.on_event(defines.events.on_pre_build,
         name = "entity-ghost"
       }
 
+      -- Approve unapproved ghosts.
       if #unapproved_ghosts > 0 then
-
-        -- Draggable entities that create gaps produce on_pre_build event every tile they are dragged, even if no entity
-        -- gets built. Some special processing needs to happen to have the undo queue behave correctly and to avoid
-        -- ending-up with bogus placeholders. See documentation for process_unapproved_ghosts_correction_queue function
-        -- for more details.
-        if event.created_by_moving and place_type == "underground-belt" or place_type == "electric-pole" or place_type == "pipe-to-ground" then
+        -- When dragging, on_pre_build gets triggered for every single tile the cursor passes, even if nothing gets
+        -- built at that spot. Since we cannot figure out if something will get built or not, we approve everything, and
+        -- then try correct the situation on the next tick for surviving unapproved ghosts.
+        -- @TODO: Try to get some feedback from developers if this is the intended behaviour.
+        if event.created_by_moving then
           storage.unapproved_ghosts_correction_queue = storage.unapproved_ghosts_correction_queue or {}
           for _, ghost in pairs(unapproved_ghosts) do
             storage.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
@@ -1230,17 +1257,65 @@ script.on_event(defines.events.on_pre_build,
 
         approve_entities(unapproved_ghosts)
       end
+
+      -- Done, bail-out.
+      return
     end
 
-    local unapproved_ghosts = player.surface.find_entities_filtered {
-      position = event.position,
-      force = get_or_create_unapproved_ghost_force(player.force),
-      name = "entity-ghost"
-    }
+    -- Grab blueprint information.
+    local blueprint =
+         player.cursor_stack.is_blueprint and player.cursor_stack
+      or player.cursor_record
+      or nil
+    local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
 
-    if #unapproved_ghosts > 0 then
-      -- game.print("Approving " .. #unapproved_ghosts .. " ghosts on pre-build")
-      approve_entities(unapproved_ghosts)
+    -- Handle blueprint builds.
+    if #blueprint_entities > 0 then
+
+      -- Calculate bounding box to use for selecting the unapproved ghosts. It needs to match blueprint position on the
+      -- map. First we calculate the blueprint height and width, then we translate that around the event position. The
+      -- final bounding box might be slightly larger in certain directions due to even vs uneven blueprint height/width.
+      local left_top = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
+      local right_bottom = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
+
+      for _, blueprint_entity in pairs(blueprint_entities) do
+        local box = prototypes.entity[blueprint_entity.name].selection_box
+        left_top.x = math.min(blueprint_entity.position.x + box.left_top.x, left_top.x)
+        left_top.y = math.min(blueprint_entity.position.y + box.left_top.y, left_top.y)
+        right_bottom.x = math.max(blueprint_entity.position.x + box.right_bottom.x, right_bottom.x)
+        right_bottom.y = math.max(blueprint_entity.position.y + box.right_bottom.y, right_bottom.y)
+      end
+
+      local width = right_bottom.x - left_top.x
+      local height = right_bottom.y - left_top.y
+
+      left_top.x = math.floor(event.position.x - width / 2)
+      left_top.y = math.floor(event.position.y - height / 2)
+      right_bottom.x = math.ceil(event.position.x + width / 2)
+      right_bottom.y = math.ceil(event.position.y + height / 2)
+
+      local area = { left_top, right_bottom }
+      local unapproved_ghosts = player.surface.find_entities_filtered {
+        area = area,
+        force = get_or_create_unapproved_ghost_force(player.force),
+        name = "entity-ghost"
+      }
+
+      -- Approve unapproved ghosts.
+      if #unapproved_ghosts > 0 then
+        storage.unapproved_ghosts_correction_queue = storage.unapproved_ghosts_correction_queue or {}
+        for _, ghost in pairs(unapproved_ghosts) do
+          storage.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
+        end
+
+        -- Ensure that the correction queue gets processed during next game tick.
+        script.on_event(defines.events.on_tick, process_unapproved_ghosts_correction_queue)
+
+        approve_entities(unapproved_ghosts)
+      end
+
+      -- Done, bail-out.
+      return
     end
 
   end
