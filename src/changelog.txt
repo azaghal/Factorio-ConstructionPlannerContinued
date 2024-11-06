@@ -5,6 +5,7 @@ Date: 9999-99-99
   Features:
   Bugfixes:
     - Fixed tiles getting removed from created/updated blueprints when using unapproved ghosts.
+    - Fixed crash when using super-forced build on top of unapproved ghosts. Blueprints from (non-library) inventory blueprint books can still cause a crash if larger than 1000 x 1000. Performance issues can be encountered when working with blueprint books due to modding API limitations.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.4
 Date: 2024-11-01

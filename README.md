@@ -51,6 +51,8 @@ Known issues
 -   Recipes which are manually unlocked by mods (without using technology research) may not be selectable in machine configuration for unapproved ghosts. This is a limiation of the current modding API (lack of events triggered when recipe is enabled/disabled).
 -   Reversing ghost belts via super-forced pasting is not undoable. The undo action will trigger, but will not put the belts back into the original orientation. This is both a limitation of the mod itself, and the way the game handles the undo queue.
 -   When underground belts get placed while dragging belt in super-forced build mode across unapproved ghost belts, the newly-placed underground belts get approved automatically, and do not have an approval indicator. This is a limitation of the current modding API. Required/expected event is not triggered, so the mod cannot apply the necessary corrections/additions.
+-   Building huge (larger than 1000 by 1000 tiles) blueprints using blueprint books from inventory (not library) will probably crash the game. There is currently no sane workaround to this without loss of functionality (undo/redo queues and preserving the recipes).
+-   Building using blueprint books may incur additional performance issues due to currently implemented workarounds.
 
 
 Roadmap
