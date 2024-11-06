@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 4.0.5
+Date: 2024-11-06
   Bugfixes:
     - Fixed tiles getting removed from created/updated blueprints when using unapproved ghosts.
     - Fixed crash when using super-forced build on top of unapproved ghosts. Performance issues can be encountered when working with blueprint books due to modding API limitations. A warning will be reported to player if the implemented workaround was not sufficient.
