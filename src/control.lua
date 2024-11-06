@@ -889,6 +889,87 @@ function cleanup_undo_stack_item(player, item_index)
 end
 
 
+--- Calculates dimensions (width and height) of a blueprint based on passed-in blueprint entities.
+--
+-- The width and height are rounded-up in the process, and orientation is taken into account (swapping width/height as
+-- necessary).
+--
+-- @param blueprint_entities {BlueprintEntity} List of blueprint entities.
+-- @param blueprint_orientation defines.direction Direction that the blueprint is facing.
+--
+-- @return {uint, uint} Width and height of a blueprint. Zero if an empty list of blueprints is passed-in.
+--
+function get_blueprint_dimensions(blueprint_entities, blueprint_orientation)
+  if table_size(blueprint_entities) == 0 then
+    return 0, 0
+  end
+
+  -- Use center of the first blueprint entity as a starting point (corners will always expand beyond this).
+  local left_top = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
+  local right_bottom = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
+
+  for _, blueprint_entity in pairs(blueprint_entities) do
+    local box = prototypes.entity[blueprint_entity.name].selection_box
+    left_top.x = math.min(blueprint_entity.position.x + box.left_top.x, left_top.x)
+    left_top.y = math.min(blueprint_entity.position.y + box.left_top.y, left_top.y)
+    right_bottom.x = math.max(blueprint_entity.position.x + box.right_bottom.x, right_bottom.x)
+    right_bottom.y = math.max(blueprint_entity.position.y + box.right_bottom.y, right_bottom.y)
+  end
+
+  local width = math.ceil(right_bottom.x - left_top.x)
+  local height = math.ceil(right_bottom.y - left_top.y)
+
+  -- Swap the height/width if the blueprint has been rotated by 90 degrees.
+  if blueprint_orientation == defines.direction.east or blueprint_orientation == defines.direction.west then
+    width, height = height, width
+  end
+
+  return width, height
+end
+
+
+--- Calculates bounding box for a blueprint placed at the passed-in map position.
+--
+-- Calculated bounding box is rounded up as necessary to cover full tiles, and the blueprint width and height is taken
+-- into the account when determining the blueprint center (odd vs even width and height will have slightly different
+-- centers).
+--
+-- @param blueprint_entities {BlueprintEntity} List of blueprint entities.
+-- @param blueprint_orientation defines.direction Direction that the blueprint is facing.
+-- @param position MapPosition Position at which the blueprint should be placed. Normally cursor position.
+--
+-- @return BoundingBox Bounding box that blueprint occupies on the map.
+--
+function get_blueprint_bounding_box(blueprint_entities, blueprint_orientation, position)
+  local width, height = get_blueprint_dimensions(blueprint_entities, blueprint_orientation)
+
+  -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
+  -- very center of a tile or between two tiles.
+  local center = {}
+  if width % 2 == 0 then
+    center.x = position.x >= 0 and math.floor(position.x + 0.5) or math.ceil(position.x - 0.5)
+  else
+    center.x = math.floor(position.x) + 0.5
+  end
+
+  if height % 2 == 0 then
+    center.y = position.y >= 0 and math.floor(position.y + 0.5) or math.ceil(position.y - 0.5)
+  else
+    center.y = math.floor(position.y) + 0.5
+  end
+
+  -- Offset the corners based on width/height, and make sure to encircle entire tiles (just in case).
+  local bounding_box = {left_top = {}, right_bottom = {}}
+
+  bounding_box.left_top.x = math.floor(center.x - width / 2)
+  bounding_box.left_top.y = math.floor(center.y - height / 2)
+  bounding_box.right_bottom.x = math.ceil(center.x + width / 2)
+  bounding_box.right_bottom.y = math.ceil(center.y + height / 2)
+
+  return bounding_box
+end
+
+
 -------------------------------------------------------------------------------
 --       EVENTS
 -------------------------------------------------------------------------------
@@ -1265,58 +1346,17 @@ script.on_event(defines.events.on_pre_build,
     -- Grab blueprint information.
     local blueprint =
          player.cursor_stack.is_blueprint and player.cursor_stack
-      or player.cursor_record
+      or player.cursor_record and player.cursor_record.type == "blueprint"
       or nil
     local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
 
     -- Handle blueprint builds.
     if #blueprint_entities > 0 then
 
-      -- Calculate selection area to use for selecting the unapproved ghosts. It needs to match blueprint position on the
-      -- map. First we calculate the blueprint height and width, then we translate that around the event position as a
-      -- center. The area will be rounded-up to encompass partial tiles.
-      local left_top = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
-      local right_bottom = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
-
-      for _, blueprint_entity in pairs(blueprint_entities) do
-        local box = prototypes.entity[blueprint_entity.name].selection_box
-        left_top.x = math.min(blueprint_entity.position.x + box.left_top.x, left_top.x)
-        left_top.y = math.min(blueprint_entity.position.y + box.left_top.y, left_top.y)
-        right_bottom.x = math.max(blueprint_entity.position.x + box.right_bottom.x, right_bottom.x)
-        right_bottom.y = math.max(blueprint_entity.position.y + box.right_bottom.y, right_bottom.y)
-      end
-
-      local width = math.ceil(right_bottom.x - left_top.x)
-      local height = math.ceil(right_bottom.y - left_top.y)
-
-      -- Swap the height/width if the blueprint has been rotated by 90 degrees.
-      if event.direction == defines.direction.east or event.direction == defines.direction.west then
-        width, height = height, width
-      end
-
-      -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
-      -- very center of a tile or between two tiles.
-      local center = {}
-      if width % 2 == 0 then
-        center.x = event.position.x >= 0 and math.floor(event.position.x + 0.5) or math.ceil(event.position.x - 0.5)
-      else
-        center.x = math.floor(event.position.x) + 0.5
-      end
-
-      if height % 2 == 0 then
-        center.y = event.position.y >= 0 and math.floor(event.position.y + 0.5) or math.ceil(event.position.y - 0.5)
-      else
-        center.y = math.floor(event.position.y) + 0.5
-      end
-
-      -- Offset the corners based on width/height, and make sure to encircle entire tiles (just in case).
-      left_top.x = math.floor(center.x - width / 2)
-      left_top.y = math.floor(center.y - height / 2)
-      right_bottom.x = math.ceil(center.x + width / 2)
-      right_bottom.y = math.ceil(center.y + height / 2)
+      local area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
 
       local unapproved_ghosts = player.surface.find_entities_filtered {
-        area = {left_top, right_bottom},
+        area = area,
         force = get_or_create_unapproved_ghost_force(player.force),
         name = "entity-ghost"
       }
