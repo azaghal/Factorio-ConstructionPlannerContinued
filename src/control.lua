@@ -1424,9 +1424,11 @@ script.on_event(defines.events.on_pre_build,
       or player.cursor_record and player.cursor_record.type == "blueprint" and player.cursor_record
       or nil
 
-    -- Grab the (potential) blueprint book from which a blueprint is being built.
-    -- @TODO: Can only do this for blueprint books stored in the library, unfortunately.
-    local blueprint_book = player.cursor_record and player.cursor_record.type == "blueprint-book" and player.cursor_record
+    -- Grab the (potential) blueprint book from library.
+    local record_blueprint_book = player.cursor_record and player.cursor_record.type == "blueprint-book" and player.cursor_record
+
+    -- Grab the (potential) blueprint book from inventory.
+    local inventory_blueprint_book = player.cursor_stack and player.cursor_stack.is_blueprint_book
 
     -- Calculate area under which the unapproved ghosts should be approved.
     local area = nil
@@ -1435,8 +1437,15 @@ script.on_event(defines.events.on_pre_build,
     elseif blueprint then
       local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
       area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
-    elseif blueprint_book then
-      area = get_largest_possible_blueprint_bounding_box(blueprint_book.contents, event.position)
+    elseif record_blueprint_book then
+      area = get_largest_possible_blueprint_bounding_box(record_blueprint_book.contents, event.position)
+    elseif inventory_blueprint_book then
+      -- @TODO: Yolo. Cannot calculate any kind of optimal/maximum area because we have zero access to blueprints stored
+      -- in a blueprint book that comes from an inventory.
+      area = {
+        left_top = {x = event.position.x - 500, y = event.position.y - 500},
+        right_bottom = {x = event.position.x + 500, y = event.position.y + 500}
+      }
     else
       -- Event was triggered by a script.
       area = {left_top = event.position, right_bottom = event.position}
