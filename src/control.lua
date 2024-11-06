@@ -970,6 +970,49 @@ function get_blueprint_bounding_box(blueprint_entities, blueprint_orientation, p
 end
 
 
+--- Calculates bounding box for an entity placed at  the passed-in map position.
+--
+-- Calculated bounding box is rounded up as necessary to cover full tiles, and the entity (prototype) width and height
+-- are taken into the account when determining the center point of the bounding box (odd vs even width and height will
+-- have slightly different centers).
+--
+-- @param entity_prototype LuaEntityPrototype Prototype of entity to calculate the bounding box for.
+-- @param entity_orientation defines.direction Direction that the entity is facing.
+-- @param position MapPosition Position at which the entity should be placed. Normally cursor position.
+--
+-- @return BoundingBox Bounding box that entity ouccupies on the map.
+--
+function get_entity_prototype_bounding_box(entity_prototype, entity_orientation, position)
+  local width = entity_prototype.tile_width
+  local height = entity_prototype.tile_height
+
+  -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
+  -- very center of a tile or between two tiles.
+  local center = {}
+  if width % 2 == 0 then
+    center.x = position.x >= 0 and math.floor(position.x + 0.5) or math.ceil(position.x - 0.5)
+  else
+    center.x = math.floor(position.x) + 0.5
+  end
+
+  if height % 2 == 0 then
+    center.y = position.y >= 0 and math.floor(position.y + 0.5) or math.ceil(position.y - 0.5)
+  else
+    center.y = math.floor(position.y) + 0.5
+  end
+
+  -- Offset the corners based on width/height, and make sure to encircle entire tiles (just in case).
+  local bounding_box = {left_top = {}, right_bottom = {}}
+
+  bounding_box.left_top.x = math.floor(center.x - width / 2)
+  bounding_box.left_top.y = math.floor(center.y - height / 2)
+  bounding_box.right_bottom.x = math.ceil(center.x + width / 2)
+  bounding_box.right_bottom.y = math.ceil(center.y + height / 2)
+
+  return bounding_box
+end
+
+
 -------------------------------------------------------------------------------
 --       EVENTS
 -------------------------------------------------------------------------------
@@ -1309,11 +1352,7 @@ script.on_event(defines.events.on_pre_build,
     if place_result then
 
       -- Find overlapping unapproved ghosts.
-      local box = place_result.selection_box
-      local area = {
-          { event.position.x + box.left_top.x, event.position.y + box.left_top.y },
-          { event.position.x + box.right_bottom.x, event.position.y + box.right_bottom.y },
-        }
+      local area = get_entity_prototype_bounding_box(place_result, event.direction, event.position)
       local unapproved_ghosts = player.surface.find_entities_filtered {
         area = area,
         force = get_or_create_unapproved_ghost_force(player.force),
