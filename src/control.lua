@@ -1013,6 +1013,76 @@ function get_entity_prototype_bounding_box(entity_prototype, entity_orientation,
 end
 
 
+--- Finds the largest blueprint dimension from the passed-in list of blueprints.
+--
+-- Passed in list of blueprints is traversed recursively. Both height and width are taken into the account when
+-- calculating the maximum dimension.
+--
+-- @param blueprints {LuaRecord} List of blueprints (records) to traverse.
+--
+-- @return uint Largest dimension (width, height) amongst the passed-in blueprints.
+--
+function get_maximum_blueprint_dimension(blueprints)
+  local maximum_dimension = 0
+
+    for _, blueprint in pairs(blueprints) do
+      if blueprint.type == "blueprint" then
+        maximum_dimension = math.max(maximum_dimension, get_blueprint_dimensions(blueprint.get_blueprint_entities(), defines.direction.north))
+      elseif blueprint.type == "blueprint-book" then
+        maximum_dimension = math.max(maximum_dimension, get_maximum_blueprint_dimension(blueprint.contents))
+      end
+    end
+
+    return maximum_dimension
+end
+
+
+--- Calculates the largest possible bounding box for passed in blueprints.
+--
+-- Largest possible bounding box will be a square the size of largest found height/width.
+--
+-- Only usable for blueprint books from the library (blueprint books from inventory do not expose the contained
+-- blueprints in any way). Primarily needed because we cannot grab the currently selected blueprint from the library
+-- blueprint book.
+--
+-- This type of calculation is required due to current modding API limitations (as of game version 2.0.14).
+--
+-- @param blueprints {LuaRecord} List of blueprints.
+-- @param position MapPosition Position at which the blueprint should be placed. Normally cursor position.
+--
+-- @return BoundingBox Bounding box that blueprint occupies on the map.
+--
+function get_largest_possible_blueprint_bounding_box(blueprints, position)
+  local width = get_maximum_blueprint_dimension(blueprints)
+  local height = width
+
+  -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
+  -- very center of a tile or between two tiles.
+  local center = {}
+  if width % 2 == 0 then
+    center.x = position.x >= 0 and math.floor(position.x + 0.5) or math.ceil(position.x - 0.5)
+  else
+    center.x = math.floor(position.x) + 0.5
+  end
+
+  if height % 2 == 0 then
+    center.y = position.y >= 0 and math.floor(position.y + 0.5) or math.ceil(position.y - 0.5)
+  else
+    center.y = math.floor(position.y) + 0.5
+  end
+
+  -- Offset the corners based on width/height, and make sure to encircle entire tiles (just in case).
+  local bounding_box = {left_top = {}, right_bottom = {}}
+
+  bounding_box.left_top.x = math.floor(center.x - width / 2)
+  bounding_box.left_top.y = math.floor(center.y - height / 2)
+  bounding_box.right_bottom.x = math.ceil(center.x + width / 2)
+  bounding_box.right_bottom.y = math.ceil(center.y + height / 2)
+
+  return bounding_box
+end
+
+
 -------------------------------------------------------------------------------
 --       EVENTS
 -------------------------------------------------------------------------------
@@ -1353,14 +1423,20 @@ script.on_event(defines.events.on_pre_build,
          player.cursor_stack.is_blueprint and player.cursor_stack
       or player.cursor_record and player.cursor_record.type == "blueprint" and player.cursor_record
       or nil
-    local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
+
+    -- Grab the (potential) blueprint book from which a blueprint is being built.
+    -- @TODO: Can only do this for blueprint books stored in the library, unfortunately.
+    local blueprint_book = player.cursor_record and player.cursor_record.type == "blueprint-book" and player.cursor_record
 
     -- Calculate area under which the unapproved ghosts should be approved.
     local area = nil
     if place_result then
       area = get_entity_prototype_bounding_box(place_result, event.direction, event.position)
-    elseif #blueprint_entities > 0 then
+    elseif blueprint then
+      local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
       area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
+    elseif blueprint_book then
+      area = get_largest_possible_blueprint_bounding_box(blueprint_book.contents, event.position)
     else
       -- Event was triggered by a script.
       area = {left_top = event.position, right_bottom = event.position}
