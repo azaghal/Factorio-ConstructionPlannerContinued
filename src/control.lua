@@ -1341,80 +1341,49 @@ script.on_event(defines.events.on_pre_build,
       return
     end
 
-    -- Grab the prototype of individual entity being built.
+    -- Grab the (potential) prototype of individual entity being built.
     local place_result =
          cursor_stack and cursor_stack.valid_for_read and cursor_stack.prototype and cursor_stack.prototype.place_result
       or cursor_ghost and cursor_ghost.name and cursor_ghost.name.place_result
       or cursor_stack.valid_for_read and cursor_stack.prototype and cursor_stack.prototype.place_result
       or nil
 
-    -- Handle individual entity builds where we can figure out place result.
-    if place_result then
-
-      -- Find overlapping unapproved ghosts.
-      local area = get_entity_prototype_bounding_box(place_result, event.direction, event.position)
-      local unapproved_ghosts = player.surface.find_entities_filtered {
-        area = area,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        name = "entity-ghost"
-      }
-
-      -- Approve unapproved ghosts.
-      if #unapproved_ghosts > 0 then
-        -- When dragging, on_pre_build gets triggered for every single tile the cursor passes, even if nothing gets
-        -- built at that spot. Since we cannot figure out if something will get built or not, we approve everything, and
-        -- then try correct the situation on the next tick for surviving unapproved ghosts.
-        -- @TODO: Try to get some feedback from developers if this is the intended behaviour.
-        if event.created_by_moving then
-          storage.unapproved_ghosts_correction_queue = storage.unapproved_ghosts_correction_queue or {}
-          for _, ghost in pairs(unapproved_ghosts) do
-            storage.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
-          end
-
-          -- Ensure that the correction queue gets processed during next game tick.
-          script.on_event(defines.events.on_tick, process_unapproved_ghosts_correction_queue)
-        end
-
-        approve_entities(unapproved_ghosts)
-      end
-
-      -- Done, bail-out.
-      return
-    end
-
-    -- Grab blueprint information.
+    -- Grab the (potential) blueprint being built.
     local blueprint =
          player.cursor_stack.is_blueprint and player.cursor_stack
       or player.cursor_record and player.cursor_record.type == "blueprint"
       or nil
     local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
 
-    -- Handle blueprint builds.
-    if #blueprint_entities > 0 then
+    -- Calculate area under which the unapproved ghosts should be approved.
+    local area = nil
+    if place_result then
+      area = get_entity_prototype_bounding_box(place_result, event.direction, event.position)
+    elseif #blueprint_entities > 0 then
+      area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
+    else
+      -- Event was triggered by a script.
+      area = {left_top = event.position, right_bottom = event.position}
+    end
 
-      local area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
+    -- Approve overlapping unapproved ghosts.
+    if area then
+      local approved_ghosts = approve_entities_in_area(player.force, player.surface, area)
 
-      local unapproved_ghosts = player.surface.find_entities_filtered {
-        area = area,
-        force = get_or_create_unapproved_ghost_force(player.force),
-        name = "entity-ghost"
-      }
-
-      -- Approve unapproved ghosts.
-      if #unapproved_ghosts > 0 then
+      -- Set up a correction queue for unapproved ghosts that will be processed in the next tick. This is meant to catch
+      -- any unapproved ghosts (that have now been approved) that survive the placement, so that their approval state
+      -- can be correctly reset. This also helps deal with building entities by dragging, since those trigger the
+      -- on_pre_build event even if nothing gets built at a specific position.
+      -- @TODO: Check with devs if it is normal that on_pre_build triggers for every single tile when draggin with an
+      --        item, even if nothing will get built.
+      if #approved_ghosts > 0 then
         storage.unapproved_ghosts_correction_queue = storage.unapproved_ghosts_correction_queue or {}
-        for _, ghost in pairs(unapproved_ghosts) do
+        for _, ghost in pairs(approved_ghosts) do
           storage.unapproved_ghosts_correction_queue[ghost.unit_number] = ghost
         end
-
-        -- Ensure that the correction queue gets processed during next game tick.
         script.on_event(defines.events.on_tick, process_unapproved_ghosts_correction_queue)
-
-        approve_entities(unapproved_ghosts)
       end
 
-      -- Done, bail-out.
-      return
     end
 
   end
