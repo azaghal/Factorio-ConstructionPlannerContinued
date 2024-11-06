@@ -744,7 +744,23 @@ function unapprove_entities(entities)
         --   this is vanilla game's intended behaviour).
         local request_from_buffers = (entity.ghost_prototype.logistic_mode == "requester" and entity.request_from_buffers) or nil
 
+        -- Try to store some basic information about the entity for logging in case it becomes invalid.
+        local warning_entity_info = serpent.line(entity)
+
         entity.force = unapproved_force
+
+        -- This can happen when an unapproved ghost is still present underneath, and the force change of the newly built
+        -- entity causes it to become invalid. This happens mainly during super-forced build, and specifically with
+        -- transport belt (undergrounds, splitters) type of entities. Prevent crash and inform player that a bug was
+        -- encountered to avoid having silent fails happen. Avoid spamming the console by showing the warning message
+        -- only once.
+        if not entity.valid then
+          if storage.cp_failed_force_paste_tick ~= game.tick then
+            storage.cp_failed_force_paste_tick = game.tick
+            game.print({"warning.cp-failed-force-paste", warning_entity_info})
+          end
+          return
+        end
 
         if request_from_buffers ~= nil then
           entity.request_from_buffers = request_from_buffers
@@ -1696,6 +1712,7 @@ script.on_event(defines.events.on_force_reset,
     end
   end
 )
+
 
 -------------------------------------------------------------------------------
 --       COMMANDS
