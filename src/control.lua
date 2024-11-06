@@ -1351,7 +1351,7 @@ script.on_event(defines.events.on_pre_build,
     -- Grab the (potential) blueprint being built.
     local blueprint =
          player.cursor_stack.is_blueprint and player.cursor_stack
-      or player.cursor_record and player.cursor_record.type == "blueprint"
+      or player.cursor_record and player.cursor_record.type == "blueprint" and player.cursor_record
       or nil
     local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
 
