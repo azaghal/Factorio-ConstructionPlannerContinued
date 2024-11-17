@@ -3,6 +3,7 @@ Version: 999.999.999
 Date: 9999-99-99
   Changes:
   Features:
+    - The /cp_cleanup command now removes all built unapproved ghost entity placeholders. Unapproved ghost entity placeholders getting built in the first place should be considered a bug. Reproduction steps are welcome.
   Bugfixes:
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.5

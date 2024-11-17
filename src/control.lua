@@ -1747,6 +1747,23 @@ function cleanup_invalid_entities_and_deconstruction_orders(base_force, unapprov
       end
     end
 
+    -- Unapproved ghost placeholders should never exist as an entity - only as a ghost.
+    local base_force_built_placeholders = surface.find_entities_filtered {
+      force = base_force,
+      name = "unapproved-ghost-placeholder",
+    }
+    for _, placeholder in pairs(base_force_built_placeholders) do
+      placeholder.destroy()
+    end
+
+    local unapproved_ghost_force_built_placeholders = surface.find_entities_filtered {
+      force = unapproved_ghost_force,
+      name = "unapproved-ghost-placeholder",
+    }
+    for _, placeholder in pairs(unapproved_ghost_force_built_placeholders) do
+      placeholder.destroy()
+    end
+
     -- Placeholders should not exist on their own. Find any that do, and get rid of them.
     local placeholders = surface.find_entities_filtered {
       force = base_force,
@@ -1846,7 +1863,7 @@ end
 
 commands.add_command(
   "cp_cleanup",
-  "Cleans-up and fixes inconsistencies cause by bugs. Please back-up your savegame before running. Must be invoked twice in row to prevent accidents.",
+  "Cleans-up and fixes inconsistencies caused by bugs. Please back-up your savegame before running. Must be invoked twice in row to prevent accidents.",
   command_cp_cleanup
 )
 
