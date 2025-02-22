@@ -1043,7 +1043,7 @@ function get_maximum_blueprint_dimension(blueprints)
 
     for _, blueprint in pairs(blueprints) do
       if blueprint.type == "blueprint" then
-        maximum_dimension = math.max(maximum_dimension, get_blueprint_dimensions(blueprint.get_blueprint_entities(), defines.direction.north))
+        maximum_dimension = math.max(maximum_dimension, get_blueprint_dimensions(blueprint.get_blueprint_entities() or {}, defines.direction.north))
       elseif blueprint.type == "blueprint-book" then
         maximum_dimension = math.max(maximum_dimension, get_maximum_blueprint_dimension(blueprint.contents))
       end
@@ -1216,7 +1216,7 @@ script.on_event(defines.events.on_player_setup_blueprint,
 
     -- Drop the placeholder entities from the blueprint.
     if blueprint and blueprint.valid then
-      local blueprintEntities = blueprint.get_blueprint_entities()
+      local blueprintEntities = blueprint.get_blueprint_entities() or {}
       local filteredBlueprintEntities = filter(
         blueprintEntities,
         function(id, blueprintEntity)
