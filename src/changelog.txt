@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 4.0.7
+Date: 2025-02-22
   Bugfixes:
     - Fixed crash when using blueprint book which contains blueprint without any entities.
 ---------------------------------------------------------------------------------------------------
