@@ -757,7 +757,7 @@ function unapprove_entities(entities)
         if not entity.valid then
           if storage.cp_failed_force_paste_tick ~= game.tick then
             storage.cp_failed_force_paste_tick = game.tick
-            game.print({"warning.cp-failed-force-paste", warning_entity_info})
+            game.print({"warning.ca-failed-force-paste", warning_entity_info})
           end
           return
         end
@@ -1832,23 +1832,23 @@ end
 --
 -- @param command CustomCommandData Command data as passed-in by the game engine.
 --
-function command_cp_cleanup(command)
+function command_ca_cleanup(command)
   local player = game.players[command.player_index]
   local unapproved_ghost_force
 
   storage.commands = storage.commands or {}
-  storage.commands.cp_cleanup = storage.commands.cp_cleanup or {}
+  storage.commands.ca_cleanup = storage.commands.ca_cleanup or {}
 
-  if not storage.commands.cp_cleanup.invoked_at or command.tick - storage.commands.cp_cleanup.invoked_at > 600 then
-    storage.commands.cp_cleanup.invoked_at = command.tick
-    player.print({"warning.cp-cleanup-command-confirm"})
+  if not storage.commands.ca_cleanup.invoked_at or command.tick - storage.commands.ca_cleanup.invoked_at > 600 then
+    storage.commands.ca_cleanup.invoked_at = command.tick
+    player.print({"warning.ca-cleanup-command-confirm"})
     return
   end
 
   -- Reset the last invocation time.
-  storage.commands.cp_cleanup.invoked_at = nil
+  storage.commands.ca_cleanup.invoked_at = nil
 
-  game.print({"warning.cp-cleanup-command-started"})
+  game.print({"warning.ca-cleanup-command-started"})
 
   for _, force in pairs(game.forces) do
     if not is_unapproved_ghost_force(force) then
@@ -1857,14 +1857,14 @@ function command_cp_cleanup(command)
     end
   end
 
-  game.print({"warning.cp-cleanup-command-finished"})
+  game.print({"warning.ca-cleanup-command-finished"})
 
 end
 
 commands.add_command(
-  "cp_cleanup",
+  "ca_cleanup",
   "Cleans-up and fixes inconsistencies caused by bugs. Please back-up your savegame before running. Must be invoked twice in row to prevent accidents.",
-  command_cp_cleanup
+  command_ca_cleanup
 )
 
 

@@ -2,6 +2,9 @@
 Version: 999.999.999
 Date: 9999-99-99
   Changes:
+    - Renamed mod in order to avoid confusion with the original Construction Planner by ceresward, which has seen active development for Factorio 2.0. Take note that the two code 
+bases have diverged at this point.
+    - Renamed /cp_cleanup command to /ca_cleanup (for naming consistency).
   Features:
   Bugfixes:
 ---------------------------------------------------------------------------------------------------
