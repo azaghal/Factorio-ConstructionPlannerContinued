@@ -1029,73 +1029,65 @@ function get_entity_prototype_bounding_box(entity_prototype, entity_orientation,
 end
 
 
---- Finds the largest blueprint dimension from the passed-in list of blueprints.
+--- Retrieves currently selected (non-book) item from the blueprint book.
 --
--- Passed in list of blueprints is traversed recursively. Both height and width are taken into the account when
--- calculating the maximum dimension.
+-- @param book LuaItem Blueprint book to grab the item from.
 --
--- @param blueprints {LuaRecord} List of blueprints (records) to traverse.
---
--- @return uint Largest dimension (width, height) amongst the passed-in blueprints.
---
-function get_maximum_blueprint_dimension(blueprints)
-  local maximum_dimension = 0
+-- @return LuaItem Blueprint, deconstructor, or upgrade item.
+function get_selected_item_from_blueprint_book(book)
+  local inventory = book.get_inventory(defines.inventory.item_main)
+  local item = inventory[book.active_index]
 
-    for _, blueprint in pairs(blueprints) do
-      if blueprint.type == "blueprint" then
-        maximum_dimension = math.max(maximum_dimension, get_blueprint_dimensions(blueprint.get_blueprint_entities() or {}, defines.direction.north))
-      elseif blueprint.type == "blueprint-book" then
-        maximum_dimension = math.max(maximum_dimension, get_maximum_blueprint_dimension(blueprint.contents))
-      end
-    end
+  if item.type == "blueprint-book" then
+    return get_selected_item_from_blueprint_book(book)
+  end
 
-    return maximum_dimension
+  return item
 end
 
 
---- Calculates the largest possible bounding box for passed in blueprints.
+--- Retrieves currently selected (non-book) item from the blueprint book record.
 --
--- Largest possible bounding box will be a square the size of largest found height/width.
+-- @param player LuaPlayer Player to get the item for.
+-- @param book LuaRecord Blueprint book record to grab the item from.
 --
--- Only usable for blueprint books from the library (blueprint books from inventory do not expose the contained
--- blueprints in any way). Primarily needed because we cannot grab the currently selected blueprint from the library
--- blueprint book.
---
--- This type of calculation is required due to current modding API limitations (as of game version 2.0.14).
---
--- @param blueprints {LuaRecord} List of blueprints.
--- @param position MapPosition Position at which the blueprint should be placed. Normally cursor position.
---
--- @return BoundingBox Bounding box that blueprint occupies on the map.
---
-function get_largest_possible_blueprint_bounding_box(blueprints, position)
-  local width = get_maximum_blueprint_dimension(blueprints)
-  local height = width
+-- @return LuaRecord Blueprint, deconstructor, or upgrade item.
+function get_selected_item_from_blueprint_book_record(player, book)
+  local record = book.contents[book.get_active_index(player)]
 
-  -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
-  -- very center of a tile or between two tiles.
-  local center = {}
-  if width % 2 == 0 then
-    center.x = position.x >= 0 and math.floor(position.x + 0.5) or math.ceil(position.x - 0.5)
-  else
-    center.x = math.floor(position.x) + 0.5
+  if record.type == "blueprint-book" then
+    return get_selected_item_from_blueprint_book_record(player, record)
   end
 
-  if height % 2 == 0 then
-    center.y = position.y >= 0 and math.floor(position.y + 0.5) or math.ceil(position.y - 0.5)
-  else
-    center.y = math.floor(position.y) + 0.5
+  return record
+end
+
+
+--- Retrieves blueprint currently held by the player.
+--
+-- Takes into the account all kinds of variations that the game presents (directly held blueprint, blueprint books,
+-- nested blueprint books, as well as their LuaRecord equivalents).
+--
+-- @param player LuaPlayer Player for which to get the blueprint..
+--
+-- @return LuaItem|LuaRecord|nil Blueprint currently held by the player or nil if none (might be deconstruction item etc).
+function get_held_blueprint(player)
+  local cursor_stack = player.cursor_stack
+  local cursor_record = player.cursor_record
+
+  local blueprint = nil
+
+  if cursor_stack.is_blueprint then
+    blueprint = cursor_stack
+  elseif cursor_stack.is_blueprint_book then
+    blueprint = get_selected_item_from_blueprint_book(cursor_stack)
+  elseif cursor_record and cursor_record.type == "blueprint" then
+    blueprint = player.cursor_record
+  elseif cursor_record and cursor_record.type == "blueprint-book" then
+    blueprint = get_selected_item_from_blueprint_book_record(player, cursor_record)
   end
 
-  -- Offset the corners based on width/height, and make sure to encircle entire tiles (just in case).
-  local bounding_box = {left_top = {}, right_bottom = {}}
-
-  bounding_box.left_top.x = math.floor(center.x - width / 2)
-  bounding_box.left_top.y = math.floor(center.y - height / 2)
-  bounding_box.right_bottom.x = math.ceil(center.x + width / 2)
-  bounding_box.right_bottom.y = math.ceil(center.y + height / 2)
-
-  return bounding_box
+  return blueprint
 end
 
 
@@ -1435,16 +1427,7 @@ script.on_event(defines.events.on_pre_build,
       or nil
 
     -- Grab the (potential) blueprint being built.
-    local blueprint =
-         player.cursor_stack.is_blueprint and player.cursor_stack
-      or player.cursor_record and player.cursor_record.type == "blueprint" and player.cursor_record
-      or nil
-
-    -- Grab the (potential) blueprint book from library.
-    local record_blueprint_book = player.cursor_record and player.cursor_record.type == "blueprint-book" and player.cursor_record
-
-    -- Grab the (potential) blueprint book from inventory.
-    local inventory_blueprint_book = player.cursor_stack and player.cursor_stack.is_blueprint_book
+    local blueprint = get_held_blueprint(player)
 
     -- Calculate area under which the unapproved ghosts should be approved.
     local area = nil
@@ -1453,15 +1436,6 @@ script.on_event(defines.events.on_pre_build,
     elseif blueprint then
       local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
       area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
-    elseif record_blueprint_book then
-      area = get_largest_possible_blueprint_bounding_box(record_blueprint_book.contents, event.position)
-    elseif inventory_blueprint_book then
-      -- @TODO: Yolo. Cannot calculate any kind of optimal/maximum area because we have zero access to blueprints stored
-      -- in a blueprint book that comes from an inventory.
-      area = {
-        left_top = {x = event.position.x - 500, y = event.position.y - 500},
-        right_bottom = {x = event.position.x + 500, y = event.position.y + 500}
-      }
     else
       -- Event was triggered by a script.
       area = {left_top = event.position, right_bottom = event.position}

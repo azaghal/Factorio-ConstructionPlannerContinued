@@ -6,7 +6,7 @@ Date: 9999-99-99
 bases have diverged at this point.
     - Renamed /cp_cleanup command to /ca_cleanup (for naming consistency).
   Features:
-  Bugfixes:
+    - Improved performance when using blueprint books from inventory or blueprint library.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.7
 Date: 2025-02-22
