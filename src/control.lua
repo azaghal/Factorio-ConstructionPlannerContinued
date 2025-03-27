@@ -1033,8 +1033,13 @@ end
 --
 -- @param book LuaItem Blueprint book to grab the item from.
 --
--- @return LuaItem Blueprint, deconstructor, or upgrade item.
+-- @return LuaItem|nil Blueprint, deconstructor, upgrade item, or nil if the book is empty.
 function get_selected_item_from_blueprint_book(book)
+  -- Empty book.
+  if not book.active_index then
+    return nil
+  end
+
   local inventory = book.get_inventory(defines.inventory.item_main)
   local item = inventory[book.active_index]
 
@@ -1051,9 +1056,13 @@ end
 -- @param player LuaPlayer Player to get the item for.
 -- @param book LuaRecord Blueprint book record to grab the item from.
 --
--- @return LuaRecord Blueprint, deconstructor, or upgrade item.
+-- @return LuaRecord|nil Blueprint, deconstructor, upgrade item, or nil if the book is empty.
 function get_selected_item_from_blueprint_book_record(player, book)
   local record = book.contents[book.get_active_index(player)]
+
+  if not record then
+    return nil
+  end
 
   if record.type == "blueprint-book" then
     return get_selected_item_from_blueprint_book_record(player, record)
@@ -1086,6 +1095,9 @@ function get_held_blueprint(player)
   elseif cursor_record and cursor_record.type == "blueprint-book" then
     blueprint = get_selected_item_from_blueprint_book_record(player, cursor_record)
   end
+
+  -- Make sure the returned item is a blueprint.
+  blueprint = blueprint and blueprint.type == "blueprint" and blueprint or nil
 
   return blueprint
 end
