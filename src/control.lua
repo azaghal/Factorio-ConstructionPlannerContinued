@@ -925,11 +925,11 @@ function get_blueprint_dimensions(blueprint_entities, blueprint_orientation)
   local right_bottom = { x = blueprint_entities[1].position.x, y = blueprint_entities[1].position.y }
 
   for _, blueprint_entity in pairs(blueprint_entities) do
-    local box = prototypes.entity[blueprint_entity.name].selection_box
-    left_top.x = math.min(blueprint_entity.position.x + box.left_top.x, left_top.x)
-    left_top.y = math.min(blueprint_entity.position.y + box.left_top.y, left_top.y)
-    right_bottom.x = math.max(blueprint_entity.position.x + box.right_bottom.x, right_bottom.x)
-    right_bottom.y = math.max(blueprint_entity.position.y + box.right_bottom.y, right_bottom.y)
+    local box = get_entity_prototype_bounding_box(prototypes.entity[blueprint_entity.name], blueprint_entity.direction, blueprint_entity.position)
+    left_top.x = math.min(box.left_top.x, left_top.x)
+    left_top.y = math.min(box.left_top.y, left_top.y)
+    right_bottom.x = math.max(box.right_bottom.x, right_bottom.x)
+    right_bottom.y = math.max(box.right_bottom.y, right_bottom.y)
   end
 
   local width = math.ceil(right_bottom.x - left_top.x)
@@ -1001,6 +1001,11 @@ end
 function get_entity_prototype_bounding_box(entity_prototype, entity_orientation, position)
   local width = entity_prototype.tile_width
   local height = entity_prototype.tile_height
+
+  -- Swap the height/width if the entity has been rotated by 90 degrees.
+  if entity_orientation == defines.direction.east or entity_orientation ==defines.direction.west then
+    height, width = width, height
+  end
 
   -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
   -- very center of a tile or between two tiles.
