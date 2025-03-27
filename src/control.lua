@@ -109,7 +109,7 @@ end
 function first_match_or_nil(table)
   if table_size(table) == 0 then
     return nil
-  else 
+  else
     return table[1]
   end
 end
@@ -502,7 +502,7 @@ end
 
 --- Removes unapproved ghosts for passed-in placeholder.
 --
--- @param placeholder LuaEntity Placeholder for which to remove unapproved ghost entities. 
+-- @param placeholder LuaEntity Placeholder for which to remove unapproved ghost entities.
 --
 function remove_unapproved_ghost_for(placeholder)
   local unapproved_ghosts = get_unapproved_ghost_for(placeholder)
@@ -1105,7 +1105,7 @@ end
 
 script.on_event(defines.events.on_force_friends_changed,
   function(event)
-    if not DIPLOMACY_SYNC_IN_PROGRESS and not FORCE_CREATION_IN_PROGRESS then 
+    if not DIPLOMACY_SYNC_IN_PROGRESS and not FORCE_CREATION_IN_PROGRESS then
       local unapproved_ghost_force = get_or_create_unapproved_ghost_force(event.force)
       if unapproved_ghost_force then
         -- game.print("Syncing friends update from " .. event.force.name .. " to " .. unapproved_ghost_force.name)
@@ -1119,7 +1119,7 @@ script.on_event(defines.events.on_force_friends_changed,
 
 script.on_event(defines.events.on_force_cease_fire_changed,
   function(event)
-    if not DIPLOMACY_SYNC_IN_PROGRESS and not FORCE_CREATION_IN_PROGRESS then 
+    if not DIPLOMACY_SYNC_IN_PROGRESS and not FORCE_CREATION_IN_PROGRESS then
       local unapproved_ghost_force = get_or_create_unapproved_ghost_force(event.force)
       if unapproved_ghost_force ~= nil then
         -- game.print("Syncing cease-fire update from " .. event.force.name .. " to " .. unapproved_ghost_force.name)
@@ -1363,12 +1363,12 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
 )
 
 
--- Note: this includes when the player right-clicks on ghost entities 
+-- Note: this includes when the player right-clicks on ghost entities
 script.on_event(defines.events.on_player_mined_entity,
   function(event)
     -- game.print("construction-planner: on_player_mined_entity, event=" .. serpent.block(event));
     local entity = event.entity
-    
+
     -- If an unapproved entity was mined, find and remove the placeholder as well
     if (is_unapproved_ghost_force(entity.force)) then
       -- game.print("Unapproved ghost mined: " .. entity_debug_string(entity))
