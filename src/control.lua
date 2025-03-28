@@ -910,12 +910,14 @@ end
 -- The width and height are rounded-up in the process, and orientation is taken into account (swapping width/height as
 -- necessary).
 --
--- @param blueprint_entities {BlueprintEntity} List of blueprint entities.
+-- @param blueprint LuaItemStack|LuaRecord Blueprint to get the dimensions for.
 -- @param blueprint_orientation defines.direction Direction that the blueprint is facing.
 --
 -- @return {uint, uint} Width and height of a blueprint. Zero if an empty list of blueprints is passed-in.
 --
-function get_blueprint_dimensions(blueprint_entities, blueprint_orientation)
+function get_blueprint_dimensions(blueprint, blueprint_orientation)
+  local blueprint_entities = blueprint.get_blueprint_entities()
+
   if table_size(blueprint_entities) == 0 then
     return 0, 0
   end
@@ -950,14 +952,14 @@ end
 -- into the account when determining the blueprint center (odd vs even width and height will have slightly different
 -- centers).
 --
--- @param blueprint_entities {BlueprintEntity} List of blueprint entities.
+-- @param blueprint LuaItemStack|LuaRecord Blueprint to get the bounding box for.
 -- @param blueprint_orientation defines.direction Direction that the blueprint is facing.
 -- @param position MapPosition Position at which the blueprint should be placed. Normally cursor position.
 --
 -- @return BoundingBox Bounding box that blueprint occupies on the map.
 --
-function get_blueprint_bounding_box(blueprint_entities, blueprint_orientation, position)
-  local width, height = get_blueprint_dimensions(blueprint_entities, blueprint_orientation)
+function get_blueprint_bounding_box(blueprint, blueprint_orientation, position)
+  local width, height = get_blueprint_dimensions(blueprint, blueprint_orientation)
 
   -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
   -- very center of a tile or between two tiles.
@@ -1452,7 +1454,7 @@ script.on_event(defines.events.on_pre_build,
       area = get_entity_prototype_bounding_box(place_result, event.direction, event.position)
     elseif blueprint then
       local blueprint_entities = blueprint and blueprint.get_blueprint_entities() or {}
-      area = get_blueprint_bounding_box(blueprint_entities, event.direction, event.position)
+      area = get_blueprint_bounding_box(blueprint, event.direction, event.position)
     else
       -- Event was triggered by a script.
       area = {left_top = event.position, right_bottom = event.position}
