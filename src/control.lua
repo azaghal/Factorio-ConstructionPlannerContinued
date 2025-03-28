@@ -570,18 +570,7 @@ function approve_entities(entities)
       local base_force = get_base_force(entity.force)
 
       if entity.force ~= base_force then
-
-        -- @TODO: request_from_buffers is not preserved during force change
-        --   This behaviour is present in Factorio <= 1.1.109. Once fixed, this workaround should be removed (unless
-        --   this is vanilla game's intended behaviour).
-        local request_from_buffers = (entity.ghost_prototype.logistic_mode == "requester" and entity.request_from_buffers) or nil
-
         entity.force = base_force
-
-        if request_from_buffers ~= nil then
-          entity.request_from_buffers = request_from_buffers
-        end
-
         remove_placeholder_for(entity)
       end
 
@@ -739,11 +728,6 @@ function unapprove_entities(entities)
           end
         end
 
-        -- @TODO: request_from_buffers is not preserved during force change
-        --   This behaviour is present in Factorio <= 1.1.109. Once fixed, this workaround should be removed (unless
-        --   this is vanilla game's intended behaviour).
-        local request_from_buffers = (entity.ghost_prototype.logistic_mode == "requester" and entity.request_from_buffers) or nil
-
         -- Try to store some basic information about the entity for logging in case it becomes invalid.
         local warning_entity_info = serpent.line(entity)
 
@@ -760,10 +744,6 @@ function unapprove_entities(entities)
             game.print({"warning.ca-failed-force-paste", warning_entity_info})
           end
           return
-        end
-
-        if request_from_buffers ~= nil then
-          entity.request_from_buffers = request_from_buffers
         end
 
         -- Rotate the underground belt if required.
@@ -1511,12 +1491,7 @@ script.on_event(defines.events.script_raised_revive,
     local base_force = get_base_force(entity.force)
     if (entity.force ~= base_force) then
       remove_placeholder_for(entity)
-
-      -- @TODO: request_from_buffers is not preserved during force change
-      --   Unfortunately, it is not possible to preserve the original setting here, since the original ghost entity is
-      --   already gone at this point.
       entity.force = base_force
-
     end
   end
 )
