@@ -72,7 +72,6 @@ Roadmap
 -   Undo support for approve/unapprove actions.
 -   Preserve approval state when invoking undo.
 -   Merge approved and unapproved undo action into one when using deconstruction planner or cut-and-paste tool.
--   Make checkmarks less obnoxious.
 
 
 How it works
@@ -96,5 +95,4 @@ License
 
 All code, documentation, and assets implemented as part of this mod are released under the terms of MIT license (see the accompanying `LICENSE`) file, with the following exceptions:
 
--   [assets/crane.svg](https://game-icons.net/1x1/delapouite/crane.html), by Delapouite, under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), used in creation of modpack thumbnail.
 -   [build.sh (factorio_development.sh)](https://code.majic.rs/majic-scripts/), by Branko Majic, under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html).
