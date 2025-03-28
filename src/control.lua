@@ -961,6 +961,22 @@ end
 function get_blueprint_bounding_box(blueprint, blueprint_orientation, position)
   local width, height = get_blueprint_dimensions(blueprint, blueprint_orientation)
 
+  -- Pick the larger value between blueprint (entity-based) dimensions and snap width and height to be on the safe side.
+  if  blueprint.blueprint_snap_to_grid then
+    local snap_width, snap_height = blueprint.blueprint_snap_to_grid.x, blueprint.blueprint_snap_to_grid.y
+
+    if blueprint_orientation == defines.direction.east or blueprint_orientation == defines.direction.west then
+      snap_width, snap_height = snap_height, snap_width
+    end
+
+    -- @TODO: Approve larger area to deal with event.position imprecision when acting upon on_pre_build event
+    --   The passed-in position is normally the cursor position, which may not align with blueprint center when dragging
+    --   across with tileable (snap-to-grid) blueprints. Therefore assume that the potential bounding box is twice the
+    --   size of the blueprint
+    width = math.max(width, snap_width * 2)
+    height = math.max(height, snap_height * 2)
+  end
+
   -- Determine the center position. Depending on whether the height/width are even or odd, it can be either in the
   -- very center of a tile or between two tiles.
   local center = {}
