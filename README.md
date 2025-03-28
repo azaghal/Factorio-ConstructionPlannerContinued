@@ -5,6 +5,8 @@ Construction Approvals
 About
 -----
 
+**NOTE:** This mod was formerly known under name *Construction Planner Continued*.
+
 *Construction Approvals* changes the behavior of how ghosts are built to give the player more control over factory planning and building. With the mod enabled, construction bots are no longer automatically dispatched to build the ghosts. Instead, the player uses *Construction Planner* tool to explicitly approve construction of selected ghosts, at which point the bots are dispatched to complete the task.
 
 Why use *Construction Approvals*?
