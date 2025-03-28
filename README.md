@@ -18,6 +18,7 @@ Why use *Construction Approvals*?
 -   Plan-out an entire defensive perimeter, without worrying about bots getting ahead and building partial, non-functional defensive segments. Strategically prioritize construction of key defensive locations.
 -   Stamp out a huge solar field and approve it in chunks, thus avoiding bots building solar panels and accumulators disconnected from the main grid.
 
+![Demonstration video](https://azaghal.github.io/factorio-construction-approvals-demo/videos/00-full_demonstration.webm)
 
 Features
 --------
