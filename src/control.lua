@@ -1578,26 +1578,7 @@ script.on_event(defines.events.on_player_deconstructed_area,
     if player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
       deconstruct_unapproved_ghosts(player, player.cursor_stack, event.surface, event.area)
     elseif player.cursor_record and player.cursor_record.valid and player.cursor_record.type == "deconstruction-planner" then
-      -- @TODO: There is a bug in Factorio that seems to prevent player.cursor_record.deconstruct_area from working,
-      --        resort to cloning its settings instead. This code could be simplified if the devs address it. Bug report
-      --        on forums: https://forums.factorio.com/viewtopic.php?f=7&t=117411
-      local deconstruction_planner = get_deconstruction_planner()
-
-      deconstruction_planner.clear_deconstruction_item()
-      deconstruction_planner.entity_filters = player.cursor_record.entity_filters
-      deconstruction_planner.tile_filters = player.cursor_record.tile_filters
-      deconstruction_planner.entity_filter_mode = player.cursor_record.entity_filter_mode
-      deconstruction_planner.tile_filter_mode = player.cursor_record.tile_filter_mode
-      deconstruction_planner.tile_selection_mode = player.cursor_record.tile_selection_mode
-      deconstruction_planner.trees_and_rocks_only = player.cursor_record.trees_and_rocks_only
-
-      deconstruct_unapproved_ghosts(player, deconstruction_planner, event.surface, event.area)
-
-      -- @TODO: Deconstruction planner is primarily used for cut-and-paste tool at this point, and that one expects
-      --        specific planner config.
-      deconstruction_planner.clear_deconstruction_item()
-      deconstruction_planner.entity_filter_mode = defines.deconstruction_item.entity_filter_mode.blacklist
-      deconstruction_planner.trees_and_rocks_only = true
+      deconstruct_unapproved_ghosts(player, player.cursor_record, event.surface, event.area)
     end
 
   end
