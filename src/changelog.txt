@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
+Version: 5.0.0
+Date: 2025-03-29
   Changes:
     - Renamed mod in order to avoid confusion with the original Construction Planner by ceresward, which has seen active development for Factorio 2.0. Take note that the two code 
 bases have diverged at this point.
