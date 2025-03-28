@@ -1075,34 +1075,41 @@ function get_selected_item_from_blueprint_book_record(player, book)
 end
 
 
---- Retrieves blueprint currently held by the player.
+--- Retrieves blueprint/planner (deconstruction planner, upgrade planner) item currently held by the player.
 --
--- Takes into the account all kinds of variations that the game presents (directly held blueprint, blueprint books,
--- nested blueprint books, as well as their LuaRecord equivalents).
+-- Takes into the account all kinds of variations that the game presents (directly held, blueprint books, nested
+-- blueprint books, as well as their LuaRecord equivalents).
 --
--- @param player LuaPlayer Player for which to get the blueprint..
+-- @param player LuaPlayer Player for which to get the helo blueprint/planner item.
+-- @param plan_type string Type of plan to take into the account. Supported values are: "blueprint", "deconstruction-planner", or "upgrade-planner".
 --
 -- @return LuaItem|LuaRecord|nil Blueprint currently held by the player or nil if none (might be deconstruction item etc).
-function get_held_blueprint(player)
+function get_held_plan(player, plan_type)
   local cursor_stack = player.cursor_stack
   local cursor_record = player.cursor_record
 
-  local blueprint = nil
+  local plan = nil
 
-  if cursor_stack.is_blueprint then
-    blueprint = cursor_stack
+  if cursor_stack.is_blueprint or cursor_stack.is_deconstruction_item or cursor_stack.is_upgrade_item then
+    plan = cursor_stack
   elseif cursor_stack.is_blueprint_book then
-    blueprint = get_selected_item_from_blueprint_book(cursor_stack)
-  elseif cursor_record and cursor_record.type == "blueprint" then
-    blueprint = player.cursor_record
+    plan = get_selected_item_from_blueprint_book(cursor_stack)
+  elseif cursor_record and cursor_record.type ~= "blueprint-book" then
+    plan = player.cursor_record
   elseif cursor_record and cursor_record.type == "blueprint-book" then
-    blueprint = get_selected_item_from_blueprint_book_record(player, cursor_record)
+    plan = get_selected_item_from_blueprint_book_record(player, cursor_record)
   end
 
   -- Make sure the returned item is a blueprint.
-  blueprint = blueprint and blueprint.type == "blueprint" and blueprint or nil
+  if plan and plan_type == "blueprint" then
+    plan = plan.type == "blueprint" and plan or nil
+  elseif plan and  plan_type == "deconstruction-planner" then
+    plan = (plan.type == "deconstruction-planner" or plan.type == "deconstruction-item") and plan or nil
+  elseif plan and plan_type == "upgrade-planner" then
+    plan = (plan.type == "upgrade-planner" or plan.type == "upgrade-item") and plan or nil
+  end
 
-  return blueprint
+  return plan
 end
 
 
@@ -1285,10 +1292,8 @@ script.on_event(defines.events.on_pre_ghost_deconstructed,
 
       -- If player triggered this using a deconstruction planner, only destroy the placeholder ghost entity
       -- itself. Removal of unapproved ghost entities will be taken care of by the on_player_deconstructed_area event
-      -- handler, preserving the undo queue in the process. The second condition is used in cases where play might be
-      -- holding deconstruction planner from the library (but there is no explicit check for it).
-      elseif player and player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" or
-             player and player.cursor_stack and not player.cursor_stack.valid_for_read and not player.is_cursor_empty() and not player.is_cursor_blueprint() then
+      -- handler, preserving the undo queue in the process.
+      elseif get_held_plan(player, "deconstruction-planner") then
         entity.destroy()
 
       -- If player triggered this using the cut-and-paste tool, check if a blueprint had been set-up in the same tick as
@@ -1442,7 +1447,7 @@ script.on_event(defines.events.on_pre_build,
       or nil
 
     -- Grab the (potential) blueprint being built.
-    local blueprint = get_held_blueprint(player)
+    local blueprint = get_held_plan(player, "blueprint")
 
     -- Calculate area under which the unapproved ghosts should be approved.
     local area = nil
@@ -1575,10 +1580,10 @@ script.on_event(defines.events.on_player_deconstructed_area,
       return
     end
 
-    if player.cursor_stack and player.cursor_stack.valid_for_read and player.cursor_stack.name == "deconstruction-planner" then
-      deconstruct_unapproved_ghosts(player, player.cursor_stack, event.surface, event.area)
-    elseif player.cursor_record and player.cursor_record.valid and player.cursor_record.type == "deconstruction-planner" then
-      deconstruct_unapproved_ghosts(player, player.cursor_record, event.surface, event.area)
+    local deconstruction_planner = get_held_plan(player, "deconstruction-planner")
+
+    if deconstruction_planner then
+      deconstruct_unapproved_ghosts(player, deconstruction_planner, event.surface, event.area)
     end
 
   end
