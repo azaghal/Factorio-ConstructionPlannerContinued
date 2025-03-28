@@ -5,8 +5,10 @@ Date: 9999-99-99
     - Renamed mod in order to avoid confusion with the original Construction Planner by ceresward, which has seen active development for Factorio 2.0. Take note that the two code 
 bases have diverged at this point.
     - Renamed /cp_cleanup command to /ca_cleanup (for naming consistency).
+    - Default size of approval indicators has been reduced. Previous value can be configured by setting "Approval indicator size" to "Huge" in the map settings.
   Features:
     - Improved performance when using blueprint books from inventory or blueprint library.
+    - Setting for controlling the size of approval indicators.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.7
 Date: 2025-02-22

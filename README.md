@@ -24,6 +24,7 @@ Features
 -   Ghost construction is approved (by click-dragging) or unapproved (by shift-click-dragging) using the *Construction Planner*_tool.
 -   Automatic approval toggle can be used to change behaviour for newly placed ghosts for faster building when necessary.
 -   Blueprints can be created and updated using any combination of unapproved and approved ghosts.
+-   Approval status is indicated via check mark shown on top of the ghost entity. Green check mark indicates that ghost entity has been approved for construction. Grey check mark indicates that ghost entity has not been approved for construction. Check mark size is configurable via map settings.
 
 
 Contributions

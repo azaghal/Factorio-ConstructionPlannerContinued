@@ -1542,10 +1542,11 @@ script.on_event(defines.events.on_lua_shortcut,
 
 script.on_event(defines.events.on_runtime_mod_setting_changed,
   function(event)
-    -- game.print("construction-planner: " .. event.name .. " for " .. event.setting)
     if (event.setting == SETTING_AUTO_APPROVE) then
       local player = game.get_player(event.player_index)
       player.set_shortcut_toggled("toggle-auto-approve", is_auto_approval_enabled(player))
+    elseif (event.setting == "construction-approvals-indicator-size") then
+      approvalBadges.update_badge_sizes()
     end
   end
 )

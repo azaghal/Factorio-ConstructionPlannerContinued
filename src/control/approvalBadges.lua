@@ -1,6 +1,12 @@
 local approvalBadges = {}
 
-local badgeScale = 2
+local availableBadgeScales = {
+  tiny = 0.5,
+  small = 0.75,
+  normal = 1,
+  large = 1.5,
+  huge = 2,
+}
 
 -- TODO: consider replacing 'draw_text' with 'draw_sprite' and a better icon? (maybe Unicode hammer or hammer-and-wrench?)
 -- Unicode marks, for convenience:
@@ -16,20 +22,18 @@ function approvalBadges.getOrCreate(entity)
     storage.approvalBadges = {}
   end
   if not storage.approvalBadges[entity.unit_number] then
+    local badge_scale = availableBadgeScales[settings.global["construction-approvals-indicator-size"].value]
+
     storage.approvalBadges[entity.unit_number] = rendering.draw_text {
       text = "",
       -- text = "██",  -- Can be used for checking text bounding box / alignment
       surface = entity.surface,
       target = entity,
-      -- 5/16 ratio is techically closer to center, but it kinda looks better at 1/4
-      --target_offset = {0, -badgeScale*5/16},
-      -- @TODO: Target offset seems to be completely ignored.
-      target_offset = {0, -badgeScale/4},
       color = {0.5, 0.5, 0.5},
       -- players = {playerIndex},
       alignment = "center",
       vertical_alignment = "middle",
-      scale = badgeScale,
+      scale = badge_scale,
     }
   end
   return storage.approvalBadges[entity.unit_number]
@@ -57,6 +61,18 @@ function approvalBadges.hide(badge)
     badge.visible = false
   end
 end
+
+
+--- Updates size of all approval badges.
+--
+function approvalBadges.update_badge_sizes()
+  local configured_badge_scale = availableBadgeScales[settings.global["construction-approvals-indicator-size"].value]
+
+  for _, badge in pairs(rendering.get_all_objects("ConstructionPlannerContinued")) do
+    badge.scale = configured_badge_scale
+  end
+end
+
 
 -----------------------------------------------------------
 --  Private functions
