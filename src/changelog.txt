@@ -9,6 +9,8 @@ bases have diverged at this point.
   Features:
     - Improved performance when using blueprint books from inventory or blueprint library.
     - Setting for controlling the size of approval indicators.
+  Bugfixes:
+    - Placeholder markers are no longer included in updated blueprints from player/game library.
 ---------------------------------------------------------------------------------------------------
 Version: 4.0.7
 Date: 2025-02-22

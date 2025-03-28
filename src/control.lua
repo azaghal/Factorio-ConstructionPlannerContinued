@@ -1226,10 +1226,10 @@ script.on_event(defines.events.on_player_setup_blueprint,
     -- NOTE: This event fires for a number of different operations (not just blueprint creation), like copy or cut.
 
     local player = game.players[event.player_index]
-    local blueprint = event.stack
+    local blueprint = event.stack or event.record
 
     -- Drop the placeholder entities from the blueprint.
-    if blueprint and blueprint.valid then
+    if blueprint and (blueprint.valid or blueprint.valid_for_write) then
       local blueprintEntities = blueprint.get_blueprint_entities() or {}
       local filteredBlueprintEntities = filter(
         blueprintEntities,

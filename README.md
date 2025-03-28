@@ -45,7 +45,6 @@ Known issues
 -   Undoing deletion with combination of approved and unapproved ghosts results in two separate undo steps.
 -   Construction bots already en route to approved ghost that has been unapproved in the memantime will not turn around until they reach the build site. However, no unapproved ghosts will be built. Compare this to deconstruction of a ghost, when the bots do turn around immediatelly.
 -   Approval and unapproval actions cannot be undone. Approved ghosts built by personal robots cannot be undone. Invoking undo will not mark those newly built entities for deconstruction. Be careful not to accidentally undo some unrelated part of the base in this manner.
--   *Library* blueprints updated using unapproved ghosts will include the placeholder ghosts. Placeholder ghosts can be manually removed from such blueprint without any repercussions.
 -   Underground belt rotation can get messed-up when approving/unapproving ghost entities. Due to how game engine handles underground belt orientation (preventing inconsistencies for belts of the same force), it is not possible to fix this via mod.
 -   Underground belt rotation might not always rotate the most obvious underground belt.
 -   Belts are not rotated correctly during direction change/rotation when drag-placing in unapproved-by-default mode.
