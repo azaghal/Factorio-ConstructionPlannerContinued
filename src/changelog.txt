@@ -1,10 +1,8 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
+Version: 5.1.0
+Date: 2025-03-29
   Features:
     - Added approval handling support for 3rd-party mods (such as https://mods.factorio.com/mod/pump) that build ghosts and raise an event for it. If responsible player cannot be determiend (required in order to determine if ghost should be auto-approved or not), a warning is logged.
-  Bugfixes:
 ---------------------------------------------------------------------------------------------------
 Version: 5.0.0
 Date: 2025-03-29
