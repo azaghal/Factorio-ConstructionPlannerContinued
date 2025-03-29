@@ -1685,6 +1685,45 @@ script.on_event(defines.events.on_force_reset,
 )
 
 
+script.on_event(defines.events.script_raised_built,
+  function(event)
+    -- @TODO: Refactor this one and on_built_entity to share the same code if possible
+    --   There are high chances that some kind of bug will creep in and only get fixed in just one place. For now do not
+    --   bother with deduplication since there is also enough differences between the two code paths.
+    local entity = event.entity
+    local player = entity.last_user
+
+    if entity.type == "entity-ghost" then
+      if entity.ghost_name == "unapproved-ghost-placeholder" then
+        -- Placeholders should not get placed by 3rd-party mods.
+        entity.destroy()
+      elseif player and not is_auto_approval_enabled(player) then
+        unapprove_entities({entity})
+      elseif player then
+        approve_entities({entity})
+      else
+        -- No player could be associated to the built entity, assume auto-approval and log a warning.
+        local warning_entity_info = serpent.line(entity)
+        game.print({"warning.ca-script-built-no-last-user", warning_entity_info})
+        approve_entities({entity})
+      end
+
+    elseif entity.type == "underground-belt" and not entity.neighbours then
+      -- Try to correctly orient the underground belt to either own force (base or unapproved) or complement force
+      -- (unapproved or base).
+      local matching_underground_belt = get_matching_underground_belt(entity, get_complement_force(entity.force))
+
+      if matching_underground_belt and not get_matching_underground_belt(matching_underground_belt, matching_underground_belt.force)
+         and entity.belt_to_ground_type == matching_underground_belt.belt_to_ground_type then
+        entity.rotate()
+      end
+
+    end
+  end,
+  {{ filter="type", type="entity-ghost"}, {filter="type", type="underground-belt"}}
+)
+
+
 -------------------------------------------------------------------------------
 --       COMMANDS
 -------------------------------------------------------------------------------
