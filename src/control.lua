@@ -1712,9 +1712,8 @@ script.on_event(defines.events.script_raised_built,
       elseif player then
         approve_entities({entity})
       else
-        -- No player could be associated to the built entity, assume auto-approval and log a warning.
-        local warning_entity_info = serpent.line(entity)
-        game.print({"warning.ca-script-built-no-last-user", warning_entity_info})
+        -- No player could be associated with the built entity, auto-approve by default. This can happen with some mods
+        -- like the ones that deconstruct miners and fill in the gaps with pipes (when mininig uranium).
         approve_entities({entity})
       end
 

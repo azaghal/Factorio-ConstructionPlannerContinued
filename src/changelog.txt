@@ -5,6 +5,7 @@ Date: 9999-99-99
   Features:
   Bugfixes:
     - Fixed infinite game loop/freeze when researching technologies with (infinite) levels.
+    - Dropped the warning message about inability to determine responsible player when scripts build entities. Mods that want player's approval setting to be respected would need to set the last user/player of the ghost entity.
 ---------------------------------------------------------------------------------------------------
 Version: 5.1.0
 Date: 2025-03-29
