@@ -1646,7 +1646,12 @@ script.on_event(defines.events.on_player_joined_game,
 script.on_event(defines.events.on_research_finished,
   function(event)
     local technology = event.research
-    sync_technology(technology)
+
+    -- Theoretically, this should work fine two-ways, but there is something weird that can happen when setting the
+    -- researched technology levels that sends the code into an infinite loop.
+    if is_base_force(technology.force) then
+      sync_technology(technology)
+    end
   end
 )
 
@@ -1656,7 +1661,12 @@ script.on_event(defines.events.on_research_finished,
 script.on_event(defines.events.on_research_reversed,
   function(event)
     local technology = event.research
-    sync_technology(technology)
+
+    -- Theoretically, this should work fine two-ways, but there is something weird that can happen when setting the
+    -- researched technology levels that sends the code into an infinite loop.
+    if is_base_force(technology.force) then
+      sync_technology(technology)
+    end
   end
 )
 

@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed infinite game loop/freeze when researching technologies with (infinite) levels.
 ---------------------------------------------------------------------------------------------------
 Version: 5.1.0
 Date: 2025-03-29
