@@ -1175,7 +1175,7 @@ script.on_event(defines.events.on_built_entity,
         approve_entities({entity})
       end
 
-    elseif entity.type == "underground-belt" and not entity.neighbours then
+    elseif entity.type == "underground-belt" and not entity.underground_belt_neighbour then
 
       -- If underground belt has no matching underground belt in its own force, try to orient it in same direction as a
       -- matching underground belt in complement force (if any) - but only if the matching underground belt from
@@ -1696,7 +1696,7 @@ script.on_event(defines.events.script_raised_built,
         approve_entities({entity})
       end
 
-    elseif entity.type == "underground-belt" and not entity.neighbours then
+    elseif entity.type == "underground-belt" and not entity.underground_belt_neighbour then
       -- Try to correctly orient the underground belt to either own force (base or unapproved) or complement force
       -- (unapproved or base).
       local matching_underground_belt = get_matching_underground_belt(entity, get_complement_force(entity.force))
