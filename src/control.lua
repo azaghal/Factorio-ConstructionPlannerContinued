@@ -896,7 +896,7 @@ end
 -- @return {uint, uint} Width and height of a blueprint. Zero if an empty list of blueprints is passed-in.
 --
 function get_blueprint_dimensions(blueprint, blueprint_orientation)
-  local blueprint_entities = blueprint.get_blueprint_entities()
+  local blueprint_entities = blueprint.get_blueprint_entities() or {}
 
   if table_size(blueprint_entities) == 0 then
     return 0, 0

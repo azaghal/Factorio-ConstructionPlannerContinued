@@ -4,6 +4,7 @@ Date: 9999-99-99
   Changes:
   Features:
   Bugfixes:
+    - Fixed crash when force-placing blueprint with only tiles and no entities.
 ---------------------------------------------------------------------------------------------------
 Version: 5.1.1
 Date: 2025-04-09
