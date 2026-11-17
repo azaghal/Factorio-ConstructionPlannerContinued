@@ -441,27 +441,6 @@ function remove_invalid_nearby_placeholders(surface, position)
 end
 
 
---- Searches for entities in specified area that belong to passed-in force, and returns them as blueprint entities.
---
--- @param surface LuaSurface Surface to search for entities.
--- @param force LuaForce Force to which the entities belong to.
--- @param area BoundingBox Bounding box on the surface to search for entities.
---
--- @return {LuaEntity} List of entities in format compatible for blueprint use.
---
-function get_entities_as_blueprint_entities(surface, force, area)
-  local bp = get_script_blueprint()
-  bp.clear_blueprint()
-  bp.create_blueprint {
-    surface = surface,
-    force = force,
-    area = area,
-    always_include_tiles = false
-  }
-  return bp.get_blueprint_entities()
-end
-
-
 --- Retrieves list of unapproved ghosts matching a placeholder.
 --
 -- Normally only one unapproved ghost should match a placeholder.
