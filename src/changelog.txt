@@ -1,8 +1,6 @@
 ---------------------------------------------------------------------------------------------------
-Version: 999.999.999
-Date: 9999-99-99
-  Changes:
-  Features:
+Version: 6.0.1
+Date: 2026-11-18
   Bugfixes:
     - Blacklisted the forked mod to help avoid players running into collisions from running the mods in parallel.
 ---------------------------------------------------------------------------------------------------
